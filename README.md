@@ -220,3 +220,18 @@ If you use YOLOX in your research, please cite our work by using the following B
   year={2021}
 }
 ```
+
+## Install
+```shell
+conda create --name yoloxx python=3.7 -y
+
+conda activate yoloxx
+
+conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
+
+pip install -U pip && pip install -r requirements.txt
+
+pip install -v -e .  # or  python3 setup.py develop
+
+pip install cython; pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
+```
