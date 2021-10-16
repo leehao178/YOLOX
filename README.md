@@ -223,9 +223,9 @@ If you use YOLOX in your research, please cite our work by using the following B
 
 ## Install
 ```shell
-conda create --name yoloxx python=3.7 -y
+conda create --name yolox python=3.7 -y
 
-conda activate yoloxx
+conda activate yolox
 
 conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
 
