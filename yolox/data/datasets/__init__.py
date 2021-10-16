@@ -7,3 +7,12 @@ from .coco_classes import COCO_CLASSES
 from .datasets_wrapper import ConcatDataset, Dataset, MixConcatDataset
 from .mosaicdetection import MosaicDetection
 from .voc import VOCDetection
+
+# rotation
+from .coco_head_less import COCOHeadLessDataset
+from .coco_head_order import COCOHeadOrderDataset
+from .mosaicdetection_headless import MosaicHeadLessDetection
+from .mosaicdetection_headorder import MosaicHeadOrderDetection
+
+from .car_classes import CAR_CLASSES, CAR8_CLASSES
+from .dota_classes import DOTA_10_CLASSES, DOTA_15_CLASSES

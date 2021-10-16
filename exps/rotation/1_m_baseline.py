@@ -1,79 +1,96 @@
 #!/usr/bin/env python3
 # -*- coding:utf-8 -*-
-# Copyright (c) 2014-2021 Megvii Inc. All rights reserved.
+# Copyright (c) 2021 CYCU Lab602 Hao Lee All rights reserved.
 
 import os
-import random
+
 
 import torch
 import torch.distributed as dist
 import torch.nn as nn
 
-from .base_exp import BaseExp
+from yolox.exp import Exp as MyExp
 
 
-class Exp(BaseExp):
+class Exp(MyExp):
     def __init__(self):
-        super().__init__()
+        super(Exp, self).__init__()
 
         # ---------------- model config ---------------- #
-        self.num_classes = 80
-        self.depth = 1.00
-        self.width = 1.00
+        self.num_classes = 15
+        self.depth = 0.67
+        self.width = 0.75
         self.act = 'silu'
+        self.iou_loss = "iou"
+        self.obj_loss = "bce"
+        self.cls_loss = "bce"
+        self.ang_loss = "focalloss"
+        self.head_loss = "bce"
 
         # ---------------- dataloader config ---------------- #
         # set worker to 4 for shorter dataloader init time
         self.data_num_workers = 4
-        self.input_size = (640, 640)  # (height, width)
+        self.input_size = (800, 800)
         # Actual multiscale ranges: [640-5*32, 640+5*32].
         # To disable multiscale training, set the
         # self.multiscale_range to 0.
-        self.multiscale_range = 5
+        self.multiscale_range = 0
         # You can uncomment this line to specify a multiscale range
         # self.random_size = (14, 26)
-        self.data_dir = None
+        self.data_dir = "/home/danny/DataSet/dota_head_coco"
         self.train_ann = "instances_train2017.json"
         self.val_ann = "instances_val2017.json"
 
         # --------------- transform config ----------------- #
-        self.mosaic_prob = 1.0
+        self.mosaic_prob = 0.0
         self.mixup_prob = 1.0
         self.hsv_prob = 1.0
-        self.flip_prob = 0.5
-        self.degrees = 10.0
         self.translate = 0.1
         self.mosaic_scale = (0.1, 2)
         self.mixup_scale = (0.5, 1.5)
         self.shear = 2.0
         self.perspective = 0.0
-        self.enable_mixup = True
+        self.enable_mixup = False
 
+        # --------------- data augment config --------------- #
+        self.enable_flip=False
+        self.flip_prob=0.5
+        self.enable_rotate=False
+        self.rotate_prob=0.5
+        self.degrees = 45
+
+        epoch_scale = 2
         # --------------  training config --------------------- #
-        self.warmup_epochs = 5
-        self.max_epoch = 300
+        self.warmup_epochs = 5 * epoch_scale
+        self.max_epoch = 300 * epoch_scale
         self.warmup_lr = 0
         self.basic_lr_per_img = 0.01 / 64.0
         self.scheduler = "yoloxwarmcos"
-        self.no_aug_epochs = 15
+        self.no_aug_epochs = 15 * epoch_scale
         self.min_lr_ratio = 0.05
         self.ema = True
-
+        self.optimize = 'sgd'
+        # self.optimize = 'adam'
         self.weight_decay = 5e-4
         self.momentum = 0.9
-        self.print_interval = 10
-        self.eval_interval = 10
+        # self.momentum = 0.937
+        self.print_interval = 1
+        self.eval_interval = 300
+        self.save_ckpt_interval = 30
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
-        self.save_ckpt_interval = 30
+        # --------------  angles config --------------------- #
+        self.label_type = 0
+        self.label_raduius = 6
+        self.num_angles = 180
 
         # -----------------  testing config ------------------ #
-        self.test_size = (640, 640)
-        self.test_conf = 0.01
-        self.nmsthre = 0.65
-
+        self.test_size = (800, 800)
+        self.test_conf = 0.05
+        self.nmsthre = 0.1
+    
     def get_model(self):
-        from yolox.models import YOLOX, YOLOPAFPN, YOLOXHead
+        from yolox.models import YOLOXHeadOrder, YOLOPAFPN, YOLOXRotateHeadOrderHead
 
         def init_yolo(M):
             for m in M.modules():
@@ -83,24 +100,34 @@ class Exp(BaseExp):
 
         if getattr(self, "model", None) is None:
             in_channels = [256, 512, 1024]
-            backbone = YOLOPAFPN(self.depth, self.width, in_channels=in_channels, act=self.act)
-            head = YOLOXHead(self.num_classes, self.width, in_channels=in_channels, act=self.act)
-            self.model = YOLOX(backbone, head)
+            backbone = YOLOPAFPN(self.depth, self.width, in_channels=in_channels)
+            head = YOLOXRotateHeadOrderHead(num_classes=self.num_classes, 
+                                            num_angles=self.num_angles, 
+                                            iou_loss=self.iou_loss,
+                                            obj_loss=self.obj_loss,
+                                            cls_loss=self.cls_loss,
+                                            ang_loss=self.ang_loss,
+                                            head_loss=self.head_loss,
+                                            label_type=self.label_type, 
+                                            label_raduius=self.label_raduius, 
+                                            width=self.width, 
+                                            in_channels=in_channels)
+            self.model = YOLOXHeadOrder(backbone, head)
 
         self.model.apply(init_yolo)
         self.model.head.initialize_biases(1e-2)
         return self.model
-
+    
     def get_data_loader(
         self, batch_size, is_distributed, no_aug=False, cache_img=False
     ):
         from yolox.data import (
-            COCODataset,
-            TrainTransform,
+            COCOHeadOrderDataset,
+            TrainTransformHeadOrder,
             YoloBatchSampler,
             DataLoader,
             InfiniteSampler,
-            MosaicDetection,
+            MosaicHeadOrderDetection,
             worker_init_reset_seed,
         )
         from yolox.utils import (
@@ -111,24 +138,25 @@ class Exp(BaseExp):
         local_rank = get_local_rank()
 
         with wait_for_the_master(local_rank):
-            dataset = COCODataset(
+            dataset = COCOHeadOrderDataset(
                 data_dir=self.data_dir,
                 json_file=self.train_ann,
+                name="train2017",
                 img_size=self.input_size,
-                preproc=TrainTransform(
-                    max_labels=50,
-                    flip_prob=self.flip_prob,
+                preproc=TrainTransformHeadOrder(
+                    max_labels=9999,
+                    flip_prob=0.0,
                     hsv_prob=self.hsv_prob),
                 cache=cache_img,
             )
 
-        dataset = MosaicDetection(
+        dataset = MosaicHeadOrderDetection(
             dataset,
             mosaic=not no_aug,
             img_size=self.input_size,
-            preproc=TrainTransform(
-                max_labels=120,
-                flip_prob=self.flip_prob,
+            preproc=TrainTransformHeadOrder(
+                max_labels=9999,
+                flip_prob=0.0,
                 hsv_prob=self.hsv_prob),
             degrees=self.degrees,
             translate=self.translate,
@@ -139,8 +167,12 @@ class Exp(BaseExp):
             enable_mixup=self.enable_mixup,
             mosaic_prob=self.mosaic_prob,
             mixup_prob=self.mixup_prob,
+            enable_flip=self.enable_flip,
+            flip_prob=self.flip_prob,
+            enable_rotate=self.enable_rotate,
+            rotate_prob=self.rotate_prob
         )
-
+        
         self.dataset = dataset
 
         if is_distributed:
@@ -166,44 +198,6 @@ class Exp(BaseExp):
 
         return train_loader
 
-    def random_resize(self, data_loader, epoch, rank, is_distributed):
-        tensor = torch.LongTensor(2).cuda()
-
-        if rank == 0:
-            size_factor = self.input_size[1] * 1.0 / self.input_size[0]
-            if not hasattr(self, 'random_size'):
-                min_size = int(self.input_size[0] / 32) - self.multiscale_range
-                max_size = int(self.input_size[0] / 32) + self.multiscale_range
-                self.random_size = (min_size, max_size)
-            size = random.randint(*self.random_size)
-            size = (int(32 * size), 32 * int(size * size_factor))
-            tensor[0] = size[0]
-            tensor[1] = size[1]
-
-        if is_distributed:
-            dist.barrier()
-            dist.broadcast(tensor, 0)
-
-        input_size = (tensor[0].item(), tensor[1].item())
-        return input_size
-
-    def preprocess(self, inputs, targets, tsize):
-        scale_y = tsize[0] / self.input_size[0]
-        scale_x = tsize[1] / self.input_size[1]
-        if scale_x != 1 or scale_y != 1:
-            inputs = nn.functional.interpolate(
-                inputs, size=tsize, mode="bilinear", align_corners=False
-            )
-            # TODO 怪怪的?
-            # 官方作法  1::2 <-- 疑似是1開始間隔2取一次
-            # targets[..., 1::2] = targets[..., 1::2] * scale_x
-            # targets[..., 2::2] = targets[..., 2::2] * scale_y
-            targets[..., 1:2] = targets[..., 1:2] * scale_x
-            targets[..., 3:4] = targets[..., 3:4] * scale_x
-            targets[..., 2:3] = targets[..., 2:3] * scale_y
-            targets[..., 4:5] = targets[..., 4:5] * scale_y
-        return inputs, targets
-
     def get_optimizer(self, batch_size):
         if "optimizer" not in self.__dict__:
             if self.warmup_epochs > 0:
@@ -221,9 +215,14 @@ class Exp(BaseExp):
                 elif hasattr(v, "weight") and isinstance(v.weight, nn.Parameter):
                     pg1.append(v.weight)  # apply decay
 
-            optimizer = torch.optim.SGD(
-                pg0, lr=lr, momentum=self.momentum, nesterov=True
-            )
+            if self.optimize == 'sgd':
+                optimizer = torch.optim.SGD(
+                    pg0, lr=lr, momentum=self.momentum, nesterov=True
+                )
+            elif self.optimize == 'adam':
+                optimizer = torch.optim.Adam(
+                    pg0, lr=lr, betas=(self.momentum, 0.999)
+                )
             optimizer.add_param_group(
                 {"params": pg1, "weight_decay": self.weight_decay}
             )  # add pg1 with weight_decay
@@ -232,30 +231,15 @@ class Exp(BaseExp):
 
         return self.optimizer
 
-    def get_lr_scheduler(self, lr, iters_per_epoch):
-        from yolox.utils import LRScheduler
-
-        scheduler = LRScheduler(
-            self.scheduler,
-            lr,
-            iters_per_epoch,
-            self.max_epoch,
-            warmup_epochs=self.warmup_epochs,
-            warmup_lr_start=self.warmup_lr,
-            no_aug_epochs=self.no_aug_epochs,
-            min_lr_ratio=self.min_lr_ratio,
-        )
-        return scheduler
-
     def get_eval_loader(self, batch_size, is_distributed, testdev=False, legacy=False):
-        from yolox.data import COCODataset, ValTransform
+        from yolox.data import COCOHeadOrderDataset, ValTransformHeadOrder
 
-        valdataset = COCODataset(
+        valdataset = COCOHeadOrderDataset(
             data_dir=self.data_dir,
-            json_file=self.val_ann if not testdev else "image_info_test-dev2017.json",
-            name="val2017" if not testdev else "test2017",
+            json_file=self.val_ann if not testdev else "instances_dev2017.json",
+            name="val2017" if not testdev else "dev2017",
             img_size=self.test_size,
-            preproc=ValTransform(legacy=legacy),
+            preproc=ValTransformHeadOrder(legacy=legacy),
         )
 
         if is_distributed:
@@ -292,3 +276,4 @@ class Exp(BaseExp):
 
     def eval(self, model, evaluator, is_distributed, half=False):
         return evaluator.evaluate(model, is_distributed, half)
+    

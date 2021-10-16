@@ -181,7 +181,7 @@ class MosaicDetection(Dataset):
             img,
             (int(img.shape[1] * cp_scale_ratio), int(img.shape[0] * cp_scale_ratio)),
             interpolation=cv2.INTER_LINEAR,
-        )
+        ).astype(np.float32)
 
         cp_img[
             : int(img.shape[0] * cp_scale_ratio), : int(img.shape[1] * cp_scale_ratio)

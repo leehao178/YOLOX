@@ -7,3 +7,7 @@ from .data_prefetcher import DataPrefetcher
 from .dataloading import DataLoader, get_yolox_datadir, worker_init_reset_seed
 from .datasets import *
 from .samplers import InfiniteSampler, YoloBatchSampler
+
+# rotation
+from .data_augment_headless import TrainTransformHeadLess, ValTransformHeadLess
+from .data_augment_headorder import TrainTransformHeadOrder, ValTransformHeadOrder

@@ -19,3 +19,5 @@ class Exp(MyExp):
         self.data_dir = "/home/danny/DataSet/car8_head_coco"
         self.train_ann = "instances_train2017.json"
         self.val_ann = "instances_val2017.json"
+        self.print_interval = 1
+        self.save_ckpt_interval = 999

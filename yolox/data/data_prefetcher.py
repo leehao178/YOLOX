@@ -24,6 +24,7 @@ class DataPrefetcher:
         try:
             self.next_input, self.next_target, _, _ = next(self.loader)
         except StopIteration:
+            # pass
             self.next_input = None
             self.next_target = None
             return
