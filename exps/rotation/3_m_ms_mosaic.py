@@ -37,7 +37,7 @@ class Exp(MyExp):
         self.multiscale_range = 5
         # You can uncomment this line to specify a multiscale range
         # self.random_size = (14, 26)
-        self.data_dir = "/home/danny/DataSet/dota_head_coco"
+        self.data_dir = "/home/aimlusr/dataset/dota10"
         self.train_ann = "instances_train2017.json"
         self.val_ann = "instances_val2017.json"
 

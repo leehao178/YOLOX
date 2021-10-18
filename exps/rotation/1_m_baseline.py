@@ -29,7 +29,7 @@ class Exp(MyExp):
 
         # ---------------- dataloader config ---------------- #
         # set worker to 4 for shorter dataloader init time
-        self.data_num_workers = 4
+        self.data_num_workers = 2
         self.input_size = (800, 800)
         # Actual multiscale ranges: [640-5*32, 640+5*32].
         # To disable multiscale training, set the
@@ -37,7 +37,7 @@ class Exp(MyExp):
         self.multiscale_range = 0
         # You can uncomment this line to specify a multiscale range
         # self.random_size = (14, 26)
-        self.data_dir = "/home/danny/DataSet/dota_head_coco"
+        self.data_dir = "/home/aimlusr/dataset/dota10"
         self.train_ann = "instances_train2017.json"
         self.val_ann = "instances_val2017.json"
 
@@ -59,7 +59,7 @@ class Exp(MyExp):
         self.rotate_prob=0.5
         self.degrees = 45
 
-        epoch_scale = 2
+        epoch_scale = 1
         # --------------  training config --------------------- #
         self.warmup_epochs = 5 * epoch_scale
         self.max_epoch = 300 * epoch_scale
