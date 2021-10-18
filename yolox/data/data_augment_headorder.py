@@ -228,7 +228,7 @@ class TrainTransformHeadOrder:
         angles_t = np.expand_dims(angles_t, 1)  # rotation
         orders_t = np.expand_dims(orders_t, 1)  # headorder
 
-        targets_t = np.hstack((labels_t, boxes_t, angles_t, orders_t))  # rotation headorder
+        targets_t = np.hstack((labels_t, boxes_t, angles_t, orders_t))   # rotation headorder
         padded_labels = np.zeros((self.max_labels, 7))  # rotation
         padded_labels[range(len(targets_t))[: self.max_labels]] = targets_t[
             : self.max_labels

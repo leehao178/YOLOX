@@ -34,7 +34,7 @@ class YOLOXHeadOrder(YOLOX):
             assert targets is not None
             loss, iou_loss, conf_loss, cls_loss, ang_loss, head_loss, l1_loss, num_fg = self.head(
                 fpn_outs, targets, x
-            )  # rotation headorder
+            )   # rotation headorder
             outputs = {
                 "total_loss": loss,
                 "iou_loss": iou_loss,

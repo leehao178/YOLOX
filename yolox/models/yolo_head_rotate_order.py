@@ -227,7 +227,7 @@ class YOLOXRotateHeadOrderHead(nn.Module):
             obj_output = self.obj_preds[k](reg_feat)
 
             if self.training:
-                output = torch.cat([reg_output, obj_output, cls_output, ang_output, head_output], 1)  # rotation headorder
+                output = torch.cat([reg_output, obj_output, cls_output, ang_output, head_output], 1)   # rotation headorder
                 output, grid = self.get_output_and_grid(
                     output, k, stride_this_level, xin[0].type()
                 )
@@ -251,7 +251,7 @@ class YOLOXRotateHeadOrderHead(nn.Module):
 
             else:
                 output = torch.cat(
-                    [reg_output, obj_output.sigmoid(), cls_output.sigmoid(), ang_output.sigmoid(), head_output.sigmoid()], 1  # rotation headorder
+                    [reg_output, obj_output.sigmoid(), cls_output.sigmoid(), ang_output.sigmoid(), head_output.sigmoid()], 1   # rotation headorder
                 )
 
             outputs.append(output)
@@ -282,7 +282,7 @@ class YOLOXRotateHeadOrderHead(nn.Module):
         grid = self.grids[k]
 
         batch_size = output.shape[0]
-        n_ch = 5 + self.num_classes + self.num_angles + 4  # rotation headorder
+        n_ch = 5 + self.num_classes + self.num_angles + 4   # rotation headorder
         hsize, wsize = output.shape[-2:]
         if grid.shape[2:4] != output.shape[2:4]:
             yv, xv = torch.meshgrid([torch.arange(hsize), torch.arange(wsize)])
@@ -518,7 +518,7 @@ class YOLOXRotateHeadOrderHead(nn.Module):
             loss_l1 = 0.0
 
         reg_weight = 5.0
-        loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_ang + loss_head + loss_l1 + 1e-6# rotation headorder
+        loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_ang + loss_head + loss_l1  # rotation headorder
 
         return (
             loss,
