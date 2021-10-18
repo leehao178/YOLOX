@@ -244,7 +244,7 @@ class Trainer:
             time_str = ", ".join(
                 ["{}: {:.3f}s".format(k, v.avg) for k, v in time_meter.items()]
             )
-            
+
             logger.info(
                 "{}, mem: {:.0f}Mb, {}, {}, lr: {:.3e}".format(
                     progress_str,
