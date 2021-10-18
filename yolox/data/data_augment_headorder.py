@@ -181,8 +181,8 @@ class TrainTransformHeadOrder:
     def __call__(self, image, targets, input_dim):
         boxes = targets[:, :4].copy()
         labels = targets[:, 4].copy()
-        angles = targets[:, 5].copy() # rotation
-        orders = targets[:, 6].copy() # headorder
+        angles = targets[:, 5].copy()  # rotation
+        orders = targets[:, 6].copy()  # headorder
         if len(boxes) == 0:
             targets = np.zeros((self.max_labels, 7), dtype=np.float32)
             image, r_o = preproc(image, input_dim)
@@ -193,8 +193,8 @@ class TrainTransformHeadOrder:
         height_o, width_o, _ = image_o.shape
         boxes_o = targets_o[:, :4]
         labels_o = targets_o[:, 4]
-        angles_o = targets_o[:, 5] # rotation
-        orders_o = targets_o[:, 6] # headorder
+        angles_o = targets_o[:, 5]  # rotation
+        orders_o = targets_o[:, 6]  # headorder
         # bbox_o: [xyxy] to [c_x,c_y,w,h]
         boxes_o = xyxy2cxcywh(boxes_o)
         
@@ -212,8 +212,8 @@ class TrainTransformHeadOrder:
         mask_b = np.minimum(boxes[:, 2], boxes[:, 3]) > 1
         boxes_t = boxes[mask_b]
         labels_t = labels[mask_b]
-        angles_t = angles[mask_b] # rotation
-        orders_t = orders[mask_b] # headorder
+        angles_t = angles[mask_b]  # rotation
+        orders_t = orders[mask_b]  # headorder
 
         # 無框
         if len(boxes_t) == 0:
@@ -221,15 +221,15 @@ class TrainTransformHeadOrder:
             boxes_o *= r_o
             boxes_t = boxes_o
             labels_t = labels_o
-            angles_t = angles_o # rotation
-            orders_t = orders_o # headorder
+            angles_t = angles_o  # rotation
+            orders_t = orders_o  # headorder
 
         labels_t = np.expand_dims(labels_t, 1)
-        angles_t = np.expand_dims(angles_t, 1) # rotation
-        orders_t = np.expand_dims(orders_t, 1) # headorder
+        angles_t = np.expand_dims(angles_t, 1)  # rotation
+        orders_t = np.expand_dims(orders_t, 1)  # headorder
 
-        targets_t = np.hstack((labels_t, boxes_t, angles_t, orders_t)) # rotation headorder
-        padded_labels = np.zeros((self.max_labels, 7)) # rotation
+        targets_t = np.hstack((labels_t, boxes_t, angles_t, orders_t))  # rotation headorder
+        padded_labels = np.zeros((self.max_labels, 7))  # rotation
         padded_labels[range(len(targets_t))[: self.max_labels]] = targets_t[
             : self.max_labels
         ]

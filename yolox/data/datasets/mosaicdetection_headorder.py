@@ -460,10 +460,10 @@ class MosaicHeadOrderDetection(Dataset):
         
         if keep_list.sum() >= 1.0:
             cls_labels = cp_labels[keep_list, 4:5].copy()
-            ang_labels = cp_labels[keep_list, 5:6].copy() # rotation
-            head_labels = cp_labels[keep_list, 6:7].copy() # headorder
+            ang_labels = cp_labels[keep_list, 5:6].copy()  # rotation
+            head_labels = cp_labels[keep_list, 6:7].copy()  # headorder
             box_labels = cp_bboxes_transformed_np[keep_list]
-            labels = np.hstack((box_labels, cls_labels, ang_labels, head_labels)) # rotation
+            labels = np.hstack((box_labels, cls_labels, ang_labels, head_labels))  # rotation
             origin_labels = np.vstack((origin_labels, labels))
             origin_img = origin_img.astype(np.float32)
             origin_img = 0.5 * origin_img + 0.5 * padded_cropped_img.astype(np.float32)

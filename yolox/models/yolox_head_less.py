@@ -41,7 +41,7 @@ class YOLOXHeadLess(YOLOX):
                 "l1_loss": l1_loss,
                 "conf_loss": conf_loss,
                 "cls_loss": cls_loss,
-                "ang_loss": ang_loss, # rotation
+                "ang_loss": ang_loss,  # rotation
                 "num_fg": num_fg,
             }
         else:

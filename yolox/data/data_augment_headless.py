@@ -181,7 +181,7 @@ class TrainTransformHeadLess:
     def __call__(self, image, targets, input_dim):
         boxes = targets[:, :4].copy()
         labels = targets[:, 4].copy()
-        angles = targets[:, 5].copy() # rotation
+        angles = targets[:, 5].copy()  # rotation
         if len(boxes) == 0:
             targets = np.zeros((self.max_labels, 6), dtype=np.float32)
             image, r_o = preproc(image, input_dim)
@@ -192,7 +192,7 @@ class TrainTransformHeadLess:
         height_o, width_o, _ = image_o.shape
         boxes_o = targets_o[:, :4]
         labels_o = targets_o[:, 4]
-        angles_o = targets_o[:, 5] # rotation
+        angles_o = targets_o[:, 5]  # rotation
         # bbox_o: [xyxy] to [c_x,c_y,w,h]
         boxes_o = xyxy2cxcywh(boxes_o)
         
@@ -210,7 +210,7 @@ class TrainTransformHeadLess:
         mask_b = np.minimum(boxes[:, 2], boxes[:, 3]) > 1
         boxes_t = boxes[mask_b]
         labels_t = labels[mask_b]
-        angles_t = angles[mask_b] # rotation
+        angles_t = angles[mask_b]  # rotation
 
         # 無框
         if len(boxes_t) == 0:
@@ -218,13 +218,13 @@ class TrainTransformHeadLess:
             boxes_o *= r_o
             boxes_t = boxes_o
             labels_t = labels_o
-            angles_t = angles_o # rotation
+            angles_t = angles_o  # rotation
 
         labels_t = np.expand_dims(labels_t, 1)
-        angles_t = np.expand_dims(angles_t, 1) # rotation
+        angles_t = np.expand_dims(angles_t, 1)  # rotation
 
-        targets_t = np.hstack((labels_t, boxes_t, angles_t)) # rotation
-        padded_labels = np.zeros((self.max_labels, 6)) # rotation
+        targets_t = np.hstack((labels_t, boxes_t, angles_t))  # rotation
+        padded_labels = np.zeros((self.max_labels, 6))  # rotation
         padded_labels[range(len(targets_t))[: self.max_labels]] = targets_t[
             : self.max_labels
         ]
