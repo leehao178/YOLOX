@@ -188,7 +188,25 @@ def findNewOrder(points, target):
     order = distList.index(min(distList))
     return order  
 
+# import numpy as np
+
+# a = np.array([32.49, -39.96,-3.86])
+# b = np.array([31.39, -39.28, -4.66])
+# c = np.array([31.14, -38.09,-4.49])
+
+# ba = a - b
+# bc = c - b
+
+# cosine_angle = np.dot(ba, bc) / (np.linalg.norm(ba) * np.linalg.norm(bc))
+# angle = np.arccos(cosine_angle)
+
+# print np.degrees(angle)
+
 def countAngle(a, b, c):
+    print('countAngle1')
+    print(a)
+    print(b)
+    print(c)
     # Create vectors from points
     ba = [ aa-bb for aa,bb in zip(a,b) ]
     bc = [ cc-bb for cc,bb in zip(c,b) ]
@@ -198,6 +216,8 @@ def countAngle(a, b, c):
     ba = [ x/nba for x in ba ]
     
     nbc = sqrt ( sum ( (x**2.0 for x in bc) ) )
+    
+    print(nbc)
     bc = [ x/nbc for x in bc ]
     
     # Calculate scalar from normalized vectors
@@ -205,7 +225,13 @@ def countAngle(a, b, c):
     
     # calculate the angle in radian
     angle = acos(scalar)
-    return math.degrees(angle)
+    
+    print(angle)
+    angle_degree = math.degrees(angle)
+    
+    print(angle_degree)
+    print('countAngle2')
+    return angle_degree
 
 def distPoints(a, b, c):
     dista = math.hypot(a[0] - b[0], a[1] - b[1])

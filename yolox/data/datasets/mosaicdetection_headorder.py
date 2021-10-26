@@ -104,6 +104,7 @@ class MosaicHeadOrderDetection(Dataset):
 
             for i_mosaic, index in enumerate(indices):
                 img, _labels, _, img_id = self._dataset.pull_item(index)
+
                 h0, w0 = img.shape[:2]  # orig hw
                 scale = min(1. * input_h / h0, 1. * input_w / w0)
                 img = cv2.resize(
@@ -118,25 +119,26 @@ class MosaicHeadOrderDetection(Dataset):
                 (l_x1, l_y1, l_x2, l_y2), (s_x1, s_y1, s_x2, s_y2) = get_mosaic_coordinate(
                     mosaic_img, i_mosaic, xc, yc, w, h, input_h, input_w
                 )
-
-                mosaic_img[l_y1:l_y2, l_x1:l_x2] = img[s_y1:s_y2, s_x1:s_x2]
-                padw, padh = l_x1 - s_x1, l_y1 - s_y1
+                # mosaic_img.size = [resized_height,resized_ width, 3]
+                mosaic_img[l_y1:l_y2, l_x1:l_x2] = img[s_y1:s_y2, s_x1:s_x2]  # mosaic_img[ymin:ymax, xmin:xmax]
+                padw, padh = l_x1 - s_x1, l_y1 - s_y1  # 原圖片未剪裁進mosaic_img中的寬高度
 
                 labels = _labels.copy()
-                # Normalized xywh to pixel xyxy format
+                # Normalized xywh to pixel xyxy format 歸一化的xywh轉為非歸一化的xyxy(左上右下)坐標形式
                 if _labels.size > 0:
-                    labels[:, 0] = scale * _labels[:, 0] + padw
-                    labels[:, 1] = scale * _labels[:, 1] + padh
-                    labels[:, 2] = scale * _labels[:, 2] + padw
-                    labels[:, 3] = scale * _labels[:, 3] + padh
+                    labels[:, 0] = scale * _labels[:, 0] + padw  # Left_top_x
+                    labels[:, 1] = scale * _labels[:, 1] + padh  # Left_top_y
+                    labels[:, 2] = scale * _labels[:, 2] + padw  # right_bottom_x
+                    labels[:, 3] = scale * _labels[:, 3] + padh  # right_bottom_y
                 mosaic_labels.append(labels)
 
             if len(mosaic_labels):
                 mosaic_labels = np.concatenate(mosaic_labels, 0)
-                np.clip(mosaic_labels[:, 0], 0, 2 * input_w, out=mosaic_labels[:, 0])
-                np.clip(mosaic_labels[:, 1], 0, 2 * input_h, out=mosaic_labels[:, 1])
-                np.clip(mosaic_labels[:, 2], 0, 2 * input_w, out=mosaic_labels[:, 2])
-                np.clip(mosaic_labels[:, 3], 0, 2 * input_h, out=mosaic_labels[:, 3])
+                # np.clip(mosaic_labels[:, 0], 0, 2 * input_w, out=mosaic_labels[:, 0])  #xmin
+                # np.clip(mosaic_labels[:, 1], 0, 2 * input_h, out=mosaic_labels[:, 1])  #ymin
+                # np.clip(mosaic_labels[:, 2], 0, 2 * input_w, out=mosaic_labels[:, 2])  #xmax
+                # np.clip(mosaic_labels[:, 3], 0, 2 * input_h, out=mosaic_labels[:, 3])  #ymax
+
 
             # 隨機對圖片進行平移，縮放，裁剪
             mosaic_img, mosaic_labels = random_perspective_with_angles(
@@ -149,9 +151,17 @@ class MosaicHeadOrderDetection(Dataset):
                 perspective=self.perspective,
                 border=[-input_h // 2, -input_w // 2],
             )  # border to remove 要移除的邊框
+            mosaic_img, mosaic_labels = self.checkLabels(origin_img=mosaic_img, origin_labels=mosaic_labels)
+            # src_img = mosaic_img.copy()
+            # for label in mosaic_labels.copy():
+            #     cv2.rectangle(src_img, (int(label[0]), int(label[1])), (int(label[2]), int(label[3])), (0, 255, 0), 2)
 
+            # src_labels = xyxy2cxcywh(mosaic_labels.copy())
+            # src_img = drawRotationbox(img=src_img.copy(), bboxes=src_labels[:, :4], angles=src_labels[:, 5], heads=src_labels[:, 6])
+            # cv2.imwrite('/home/danny/Lab/yolox_test/img_test/flip/{}_mosaic_img.jpg'.format(img_id), src_img)
+            
 
-
+            
             # 上下左右翻轉
             if self.enable_flip and random.random() < self.flip_prob:
                 flip_img, flip_labels = self.flipup(mosaic_img, mosaic_labels)
@@ -160,9 +170,11 @@ class MosaicHeadOrderDetection(Dataset):
                     mosaic_labels = flip_labels
                 # else:
                 #     print('flip_labels = 0')
-
-
-            # # 旋轉
+                    target_labels = xyxy2cxcywh(mosaic_labels.copy())
+                    flip_img = drawRotationbox(img=flip_img.copy(), bboxes=target_labels[:, :4], angles=target_labels[:, 5], heads=target_labels[:, 6])
+            
+                    cv2.imwrite('/home/danny/Lab/yolox_test/img_test/flip/{}_flip_img.jpg'.format(img_id), flip_img)
+            # 旋轉
             if self.enable_rotate and random.random() < self.rotate_prob:
                 rotated_img, rotated_labels = self.rotate(mosaic_img, mosaic_labels, self.degrees)
                 if len(rotated_labels) != 0:
@@ -170,7 +182,9 @@ class MosaicHeadOrderDetection(Dataset):
                     mosaic_labels = rotated_labels
                 # else:
                 #     print('rotated_labels = 0')
-
+            # print('enable_rotate')
+            # target_labels = xyxy2cxcywh(mosaic_labels)
+            # rotate_img = drawRotationbox(img=mosaic_img.copy(), bboxes=target_labels[:, :4], angles=target_labels[:, 5], heads=target_labels[:, 6])
             # -----------------------------------------------------------------
             # CopyPaste: https://arxiv.org/abs/2012.07177
             # -----------------------------------------------------------------
@@ -180,10 +194,23 @@ class MosaicHeadOrderDetection(Dataset):
                 and random.random() < self.mixup_prob
             ):
                 mosaic_img, mosaic_labels = self.mixup(mosaic_img, mosaic_labels, self.input_dim)
+            # print('enable_mixup')
+            # target_labels = xyxy2cxcywh(mosaic_labels)
+            # mixup_img = drawRotationbox(img=mosaic_img.copy(), bboxes=target_labels[:, :4], angles=target_labels[:, 5], heads=target_labels[:, 6])
+            
 
+            
             mix_img, padded_labels = self.preproc(mosaic_img, mosaic_labels, self.input_dim)
             img_info = (mix_img.shape[1], mix_img.shape[0])
+            # cv2.imshow('perspective_img', perspective_img)
+            # cv2.imshow('enable_flip', flip_img)
+            # cv2.imshow('enable_rotate', rotate_img)
+            # cv2.imshow('enable_mixup', mixup_img)
 
+
+            
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
             # -----------------------------------------------------------------
             # img_info and img_id are not used for training.
             # They are also hard to be specified on a mosaic image.
@@ -195,6 +222,17 @@ class MosaicHeadOrderDetection(Dataset):
             img, label, img_info, img_id = self._dataset.pull_item(idx)
             img, label = self.preproc(img, label, self.input_dim)
             return img, label, img_info, img_id
+
+    def checkLabels(self, origin_img, origin_labels, isdebug=False):
+        height, width, _ = origin_img.shape
+        labels = xyxy2cxcywh(origin_labels)
+        labels = labels[labels[:,0] > 0]
+        labels = labels[labels[:,0] < width]
+        labels = labels[labels[:,1] > 0]
+        labels = labels[labels[:,1] < height]
+        labels = cxcywh2xyxy(labels)
+
+        return origin_img, labels
 
     def rotate(self, origin_img, origin_labels, degrees=45, scale=1, isdebug=False):
         height, width, _ = origin_img.shape
@@ -285,23 +323,30 @@ class MosaicHeadOrderDetection(Dataset):
             # print('左右翻轉')
             flip_img = np.fliplr(origin_img.copy())
             for label in src_labels:
+                print('label')
+                print(label)
                 # 未左右翻轉
                 rect = longsideformat2cvminAreaRect(label[0], label[1], label[2], label[3], (label[5] - 179.9))
                 # rect = [(x, y), (w, h), theta]
+                print('rect')
+                print(rect)
                 poly = cv2.boxPoints(rect)
                 # poly = [(x1,y1),(x2,y2),(x3,y3),(x4,y4)]
-                
+                print('poly')
+                print(poly)
                 # head point
                 poly[0][0] = weight - poly[0][0]
                 poly[1][0] = weight - poly[1][0]
                 poly[2][0] = weight - poly[2][0]
                 poly[3][0] = weight - poly[3][0]
                 poly = np.int0(poly)
-
+                print(poly)
                 
                 # real angle
                 point1, point2 = distPoints([poly[0][0], poly[0][1]], [poly[1][0], poly[1][1]], [poly[2][0], poly[2][1]])
-                realangle = round(countAngle([point1[0]+5, point1[1]], point1, point2))
+                test = countAngle([point1[0]+5, point1[1]], point1, point2)
+                print(test)
+                realangle = round(test)
                 if realangle == 180:
                     realangle = 0
                 elif realangle > 180:
@@ -335,11 +380,16 @@ class MosaicHeadOrderDetection(Dataset):
             flip_img = np.flipud(origin_img.copy())
             for label in src_labels:
                 # 未上下翻轉
+                print('label')
+                print(label)
                 rect = longsideformat2cvminAreaRect(label[0], label[1], label[2], label[3], (label[5] - 179.9))
                 # rect = [(x, y), (w, h), theta]
+                print('rect')
+                print(rect)
                 poly = cv2.boxPoints(rect)
                 # poly = [(x1,y1),(x2,y2),(x3,y3),(x4,y4)]
-                
+                print('poly')
+                print(poly)
                 # head point
                 poly[0][1] = height - poly[0][1]
                 poly[1][1] = height - poly[1][1]
@@ -348,9 +398,12 @@ class MosaicHeadOrderDetection(Dataset):
                 poly = np.int0(poly)
 
                 
+                print(poly)
                 # real angle
                 point1, point2 = distPoints([poly[0][0], poly[0][1]], [poly[1][0], poly[1][1]], [poly[2][0], poly[2][1]])
-                realangle = round(countAngle([point1[0]+5, point1[1]], point1, point2))
+                test = countAngle([point1[0]+15, point1[1]], point1, point2)
+                # print(test)
+                realangle = round(test)
                 if realangle == 180:
                     realangle = 0
                 elif realangle > 180:

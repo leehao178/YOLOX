@@ -121,10 +121,14 @@ class COCOHeadOrderDataset(Dataset):
         annotations = self.coco.loadAnns(anno_ids)
         objs = []
         for obj in annotations:
-            x1 = np.max((0, obj["bbox"][0]))
-            y1 = np.max((0, obj["bbox"][1]))
-            x2 = np.min((width, x1 + np.max((0, obj["bbox"][2]))))
-            y2 = np.min((height, y1 + np.max((0, obj["bbox"][3]))))
+            # x1 = np.max((0, obj["bbox"][0]))
+            # y1 = np.max((0, obj["bbox"][1]))
+            # x2 = np.min((width, x1 + np.max((0, obj["bbox"][2]))))
+            # y2 = np.min((height, y1 + np.max((0, obj["bbox"][3]))))
+            x1 = obj["bbox"][0]
+            y1 = obj["bbox"][1]
+            x2 = obj["bbox"][0] + obj["bbox"][2]
+            y2 = obj["bbox"][1] + obj["bbox"][3]
             if obj["area"] > 0 and x2 >= x1 and y2 >= y1:
                 obj["clean_bbox"] = [x1, y1, x2, y2]
                 objs.append(obj)

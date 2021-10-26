@@ -46,17 +46,17 @@ class Exp(MyExp):
         self.mixup_prob = 1.0
         self.hsv_prob = 1.0
         self.translate = 0.1
-        self.mosaic_scale = (0.1, 2)
+        self.mosaic_scale = (1, 1.5)
         self.mixup_scale = (0.5, 1.5)
         self.shear = 2.0
         self.perspective = 0.0
         self.enable_mixup = False
 
         # --------------- data augment config --------------- #
-        self.enable_flip=True
-        self.flip_prob=0.5
-        self.enable_rotate=True
-        self.rotate_prob=0.5
+        self.enable_flip=False
+        self.flip_prob=1.0
+        self.enable_rotate=False
+        self.rotate_prob=1.0
         self.degrees = 45
 
         epoch_scale = 1

@@ -29,7 +29,7 @@ class Exp(MyExp):
 
         # ---------------- dataloader config ---------------- #
         # set worker to 4 for shorter dataloader init time
-        self.data_num_workers = 4
+        self.data_num_workers = 2
         self.input_size = (800, 800)
         # Actual multiscale ranges: [640-5*32, 640+5*32].
         # To disable multiscale training, set the
@@ -46,7 +46,7 @@ class Exp(MyExp):
         self.mixup_prob = 1.0
         self.hsv_prob = 1.0
         self.translate = 0.1
-        self.mosaic_scale = (0.1, 2)
+        self.mosaic_scale = (1, 1.5)
         self.mixup_scale = (0.5, 1.5)
         self.shear = 2.0
         self.perspective = 0.0
@@ -59,7 +59,7 @@ class Exp(MyExp):
         self.rotate_prob=0.5
         self.degrees = 45
 
-        epoch_scale = 2
+        epoch_scale = 1
         # --------------  training config --------------------- #
         self.warmup_epochs = 5 * epoch_scale
         self.max_epoch = 300 * epoch_scale

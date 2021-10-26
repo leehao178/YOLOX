@@ -104,6 +104,7 @@ def random_perspective_with_angles(
     # M = np.eye(3)
     ###########################
 
+
     if (border[0] != 0) or (border[1] != 0) or (M != np.eye(3)).any():  # image changed
         if perspective:
             img = cv2.warpPerspective(
@@ -113,9 +114,11 @@ def random_perspective_with_angles(
             img = cv2.warpAffine(
                 img, M[:2], dsize=(width, height), borderValue=(114, 114, 114)
             )
-
+    # cv2.imshow('test', img)
+    # cv2.waitKey(0)
     # Transform label coordinates
-    n = len(targets)
+    n = len(targets)  # targets.size = (目標數量, [class, xyxy, Θ, head])
+    # print(targets.shape)
     if n:
         # warp points
         xy = np.ones((n * 4, 3))
@@ -133,9 +136,11 @@ def random_perspective_with_angles(
         y = xy[:, [1, 3, 5, 7]]
         xy = np.concatenate((x.min(1), y.min(1), x.max(1), y.max(1))).reshape(4, n).T
 
+        # print(xy.shape)
+
         # clip boxes
-        xy[:, [0, 2]] = xy[:, [0, 2]].clip(0, width)
-        xy[:, [1, 3]] = xy[:, [1, 3]].clip(0, height)
+        # xy[:, [0, 2]] = xy[:, [0, 2]].clip(0, width)
+        # xy[:, [1, 3]] = xy[:, [1, 3]].clip(0, height)
 
         # filter candidates
         i = box_candidates(box1=targets[:, :4].T * s, box2=xy.T)
