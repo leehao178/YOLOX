@@ -203,10 +203,10 @@ def findNewOrder(points, target):
 # print np.degrees(angle)
 
 def countAngle(a, b, c):
-    print('countAngle1')
-    print(a)
-    print(b)
-    print(c)
+    # print('countAngle1')
+    # print(a)
+    # print(b)
+    # print(c)
     # Create vectors from points
     ba = [ aa-bb for aa,bb in zip(a,b) ]
     bc = [ cc-bb for cc,bb in zip(c,b) ]
@@ -217,7 +217,7 @@ def countAngle(a, b, c):
     
     nbc = sqrt ( sum ( (x**2.0 for x in bc) ) )
     
-    print(nbc)
+    # print(nbc)
     bc = [ x/nbc for x in bc ]
     
     # Calculate scalar from normalized vectors
@@ -226,11 +226,11 @@ def countAngle(a, b, c):
     # calculate the angle in radian
     angle = acos(scalar)
     
-    print(angle)
+    # print(angle)
     angle_degree = math.degrees(angle)
     
-    print(angle_degree)
-    print('countAngle2')
+    # print(angle_degree)
+    # print('countAngle2')
     return angle_degree
 
 def distPoints(a, b, c):

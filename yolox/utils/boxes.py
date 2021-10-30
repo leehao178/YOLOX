@@ -25,6 +25,7 @@ __all__ = [
     "postprocess_rotation_head",
     "xyxy2xyxyxyxy",
     "xywh2cxcywh",
+    "adjust_box_anns_without_clip",
 ]
 
 
@@ -333,6 +334,10 @@ def adjust_box_anns(bbox, scale_ratio, padw, padh, w_max, h_max):
     bbox[:, 1::2] = np.clip(bbox[:, 1::2] * scale_ratio + padh, 0, h_max)
     return bbox
 
+def adjust_box_anns_without_clip(bbox, scale_ratio, padw, padh):
+    bbox[:, 0::2] = bbox[:, 0::2] * scale_ratio + padw
+    bbox[:, 1::2] = bbox[:, 1::2] * scale_ratio + padh
+    return bbox
 
 def xyxy2xywh(bboxes):
     bboxes[:, 2] = bboxes[:, 2] - bboxes[:, 0]
