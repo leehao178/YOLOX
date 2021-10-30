@@ -163,7 +163,7 @@ class MosaicHeadOrderDetection(Dataset):
 
             
             # 上下左右翻轉
-            if self.enable_flip and random.random() < self.flip_prob:
+            if self.enable_flip and not len(mosaic_labels) == 0 and random.random() < self.flip_prob:
                 flip_img, flip_labels = self.flipup(mosaic_img, mosaic_labels)
                 if len(flip_labels) != 0:
                     mosaic_img = flip_img
@@ -175,7 +175,7 @@ class MosaicHeadOrderDetection(Dataset):
             
                     # cv2.imwrite('/home/danny/Lab/yolox_test/img_test/flip/{}_flip_img.jpg'.format(img_id), flip_img)
             # 旋轉
-            if self.enable_rotate and random.random() < self.rotate_prob:
+            if self.enable_rotate and not len(mosaic_labels) == 0 and random.random() < self.rotate_prob:
                 rotated_img, rotated_labels = self.rotate(mosaic_img, mosaic_labels, self.degrees)
                 if len(rotated_labels) != 0:
                     mosaic_img = rotated_img
