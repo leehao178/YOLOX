@@ -7,6 +7,9 @@ import numpy as np
 from yolox.utils import xyxy2cxcywh
 import math
 from math import sqrt, acos
+
+from yolox.utils.boxes import cxcywh2xyxy
+import random
 # import math
 __all__ = ["longsideformat2cvminAreaRect", 
            "drawRotationbox", 
@@ -15,7 +18,8 @@ __all__ = ["longsideformat2cvminAreaRect",
            "checkAngleRange",
            "findNewOrder", 
            "countAngle",
-           "distPoints"]
+           "distPoints",
+           "debugDrawBox"]
 
 def cvminAreaRect2longsideformat(x_c, y_c, width, height, theta):
     '''
@@ -126,6 +130,41 @@ def drawRotationbox(img, bboxes, angles, heads=None):
             poly = np.int0(poly)
             cv2.drawContours(image=img, contours=[poly], contourIdx=-1, color=(0, 255, 0))
     
+    return img
+
+def debugDrawBox(img, bboxes, isDraw=False):
+    if bboxes.shape[1] == 7:
+        xyxy_bboxes = cxcywh2xyxy(bboxes)
+        for cxcywhcls0h, xyxycls0h in zip(bboxes, xyxy_bboxes):
+            rect = longsideformat2cvminAreaRect(cxcywhcls0h[0], cxcywhcls0h[1], cxcywhcls0h[2], cxcywhcls0h[3], (cxcywhcls0h[5] - 179.9))
+            # poly = [(x1,y1),(x2,y2),(x3,y3),(x4,y4)]
+            poly = np.float32(cv2.boxPoints(rect))
+            poly = np.int0(poly)
+            cv2.drawContours(image=img, contours=[poly], contourIdx=-1, color=(0, 255, 0), thickness=1)
+            cv2.circle(img, (int(poly[int(cxcywhcls0h[6])][0]), int(poly[int(cxcywhcls0h[6])][1])), 2, (0, 255, 0), -1)
+
+            cv2.rectangle(img, (int(xyxycls0h[0]), int(xyxycls0h[1])), (int(xyxycls0h[2]), int(xyxycls0h[3])), (255, 0, 0), 1)
+
+    elif bboxes.shape[1] == 6:
+        xyxy_bboxes = cxcywh2xyxy(bboxes)
+        for cxcywhcls0h, xyxycls0h in zip(bboxes, xyxy_bboxes):
+            rect = longsideformat2cvminAreaRect(cxcywhcls0h[0], cxcywhcls0h[1], cxcywhcls0h[2], cxcywhcls0h[3], (cxcywhcls0h[5] - 179.9))
+            # poly = [(x1,y1),(x2,y2),(x3,y3),(x4,y4)]
+            poly = np.float32(cv2.boxPoints(rect))
+            poly = np.int0(poly)
+            cv2.drawContours(image=img, contours=[poly], contourIdx=-1, color=(0, 255, 0), thickness=1)
+
+            cv2.rectangle(img, (int(xyxycls0h[0]), int(xyxycls0h[1])), (int(xyxycls0h[2]), int(xyxycls0h[3])), (255, 0, 0), 1)
+    else:
+        pass
+
+    if isDraw:
+        randomNum = random.randint(0, 1000)
+        cv2.imwrite('/home/danny/Lab/yolox_test/img_test/{}_mosaic_img.jpg'.format(randomNum), img)
+    else:
+        cv2.imshow('test', img)
+        cv2.waitKey(0)
+
     return img
 
 def gaussian_label(label, num_class, u=0, sig=4.0):

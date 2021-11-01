@@ -50,7 +50,7 @@ class Exp(MyExp):
         self.mixup_scale = (0.5, 1.5)
         self.shear = 2.0
         self.perspective = 0.0
-        self.enable_mixup = False
+        self.enable_mixup = True
 
         # --------------- data augment config --------------- #
         self.enable_flip=True
