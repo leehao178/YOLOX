@@ -81,7 +81,7 @@ class Exp(MyExp):
 
         # --------------  angles config --------------------- #
         self.label_type = 0
-        self.label_raduius = 6
+        self.label_raduius = 2
         self.num_angles = 180
 
         # -----------------  testing config ------------------ #
