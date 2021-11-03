@@ -203,7 +203,7 @@ class Trainer:
     def after_epoch(self):
         self.save_ckpt(ckpt_name="latest")
 
-        if self.epoch % self.save_ckpt_interval == 0:
+        if (self.epoch + 1) % self.save_ckpt_interval == 0:
             self.save_ckpt(ckpt_name="epoch_{}".format(self.epoch))
 
         if (self.epoch + 1) % self.exp.eval_interval == 0:

@@ -234,4 +234,8 @@ pip install -U pip && pip install -r requirements.txt
 pip install -v -e .  # or  python3 setup.py develop
 
 pip install cython; pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
+
+cd yolox/utils/iou
+
+python setup.py build_ext --inplace
 ```
