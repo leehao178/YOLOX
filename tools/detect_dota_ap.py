@@ -66,6 +66,7 @@ def make_parser():
     parser.add_argument("--conf", default=0.05, type=float, help="test conf")
     parser.add_argument("--nms", default=0.1, type=float, help="test nms threshold")
     parser.add_argument("--tsize", default=800, type=int, help="test img size")
+    parser.add_argument("--mode", type=str, help="mode")
     parser.add_argument(
         "--fp16",
         dest="fp16",
@@ -222,21 +223,21 @@ def mkfolder(root):
     os.makedirs(detection, exist_ok=True)
 
     # result/epoch_30_ckpt/detection/merged_drawed
-    os.makedirs(os.path.join(root, "merged_drawed"), exist_ok=True)
+    os.makedirs(os.path.join(detection, "merged_drawed"), exist_ok=True)
 
     # result/epoch_30_ckpt/detection/result_txt
-    os.makedirs(os.path.join(root, "result_txt"), exist_ok=True)
+    os.makedirs(os.path.join(detection, "result_txt"), exist_ok=True)
 
     # result/epoch_30_ckpt/detection/result_txt/result_before_merge
-    before_merge = os.path.join(root, "result_before_merge")
+    before_merge = os.path.join(detection, "result_txt", "result_before_merge")
     os.makedirs(before_merge, exist_ok=True)
 
     # result/epoch_30_ckpt/detection/result_txt/result_classname
-    result_classname = os.path.join(root, "result_classname")
+    result_classname = os.path.join(detection, "result_txt", "result_classname")
     os.makedirs(result_classname, exist_ok=True)
 
     # result/epoch_30_ckpt/detection/result_txt/result_merged
-    after_merge = os.path.join(root, "result_merged")
+    after_merge = os.path.join(detection, "result_txt", "result_merged")
     os.makedirs(after_merge, exist_ok=True)
 
     return detection, before_merge, result_classname, after_merge
@@ -261,9 +262,11 @@ def main(exp, args):
         exp.test_size = (args.tsize, args.tsize)
 
     if args.mode == 'val':
+        print(os.listdir(file_name))
         for ckpts in os.listdir(file_name):
             # ckpts = epoch_30_ckpt.pth
             if ckpts.startswith('epoch_'):
+                logger.info(ckpts)
                 ckpt_folder = os.path.join(res_folder, ckpts.split('.')[0])
                 os.makedirs(ckpt_folder, exist_ok=True)
                 
@@ -288,7 +291,7 @@ def main(exp, args):
                 
                 predictor = Predictor(model, exp, DOTA_10_CLASSES, args.device)
                 image_demo(predictor, args.path, before_merge)
-                rec, prec, classap, rec75, prec75, classap75 = evaluation(
+                classap, classap75 = evaluation(
                     detoutput=detection,
                     imageset=r'/home/aimlusr/dataset/dota10/val/images', # 原始未裁切圖片
                     annopath=r'/home/aimlusr/dataset/dota10/val/labelTxt/{:s}.txt',
@@ -296,21 +299,15 @@ def main(exp, args):
                     isnotmerge=True,
                     iscountmAP=True
                 )
-                with open(os.path.join(ckpt_folder, 'recs.txt'), 'w') as f:
-                    f.writelines(rec)
-                with open(os.path.join(ckpt_folder, 'precs.txt'), 'w') as f:
-                    f.writelines(prec)
-                with open(os.path.join(ckpt_folder, 'recs75.txt'), 'w') as f:
-                    f.writelines(rec75)
-                with open(os.path.join(ckpt_folder, 'precs75.txt'), 'w') as f:
-                    f.writelines(prec75)
 
                 with open(os.path.join(res_folder, 'classap.txt'), 'a') as f:
-                    f.write('\n{}'.format(ckpts.split('.')[0]))
-                    f.writelines(classap)
+                    f.write('\n\n{}'.format(ckpts.split('.')[0]))
+                    for i in classap:
+                        f.write('\n{}'.format(i))
                 with open(os.path.join(res_folder, 'classap75.txt'), 'a') as f:
-                    f.write('\n{}'.format(ckpts.split('.')[0]))
-                    f.writelines(classap75)
+                    f.write('\n\n{}'.format(ckpts.split('.')[0]))
+                    for i in classap75:
+                        f.write('\n{}'.format(i))
     elif args.mode == 'test':
 
         test_folder = os.path.join(res_folder, 'test')
@@ -356,7 +353,7 @@ if __name__ == "__main__":
     args = make_parser().parse_args()
 
     if args.mode == 'test':
-        args.path = '/home/aimlusr/dataset/dota10/test_split/images'
+        args.path = '/home/aimlusr/dataset/dota10/test_split'
     elif args.mode == 'val':
         args.path = '/home/aimlusr/dataset/dota10/val_split/images'
 

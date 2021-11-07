@@ -182,30 +182,30 @@ class YOLOXFasterHead(nn.Module):
         # print('----------------')
 
 
-        # for k, (cls_conv, reg_conv, stride_this_level, x) in enumerate(
-        #     zip(self.cls_convs, self.reg_convs, self.strides, xin)
-        # ):
-        for k, (stride_this_level, cls_x, reg_x) in enumerate(
-            zip([8, 16, 32], cls_xs, reg_xs)
+        for k, (cls_conv, reg_conv, stride_this_level, x) in enumerate(
+            zip(self.cls_convs, self.reg_convs, self.strides, xin)
         ):
-            # x = self.stems[k](x)
-            # cls_x = x
-            # reg_x = x
+        # for k, (stride_this_level, cls_x, reg_x) in enumerate(
+        #     zip([8, 16, 32], cls_xs, reg_xs)
+        # ):
+            x = self.stems[k](x)
+            cls_x = x
+            reg_x = x
 
-            # cls_feat = cls_conv(cls_x)
-            # cls_output = self.cls_preds[k](cls_feat)
+            cls_feat = cls_conv(cls_x)
+            cls_output = self.cls_preds[k](cls_feat)
 
-            # reg_feat = reg_conv(reg_x)
-            # reg_output = self.reg_preds[k](reg_feat)
-            # obj_output = self.obj_preds[k](reg_feat)
+            reg_feat = reg_conv(reg_x)
+            reg_output = self.reg_preds[k](reg_feat)
+            obj_output = self.obj_preds[k](reg_feat)
 
-            stride_this_level_h = h*stride_this_level
-            stride_this_level_w = w*stride_this_level
+            # stride_this_level_h = h*stride_this_level
+            # stride_this_level_w = w*stride_this_level
+            print(stride_this_level)
+            # cls_output = self.cls_preds[k](cls_x)  # [batch_size, num_classes, hsize, wsize]
 
-            cls_output = self.cls_preds[k](cls_x)  # [batch_size, num_classes, hsize, wsize]
-
-            reg_output = self.reg_preds[k](reg_x)  # [batch_size, 4, hsize, wsize]
-            obj_output = self.obj_preds[k](reg_x)  # [batch_size, 1, hsize, wsize]
+            # reg_output = self.reg_preds[k](reg_x)  # [batch_size, 4, hsize, wsize]
+            # obj_output = self.obj_preds[k](reg_x)  # [batch_size, 1, hsize, wsize]
 
             if self.training:
                 # output = torch.cat([reg_output, obj_output, cls_output], 1)
@@ -265,8 +265,8 @@ class YOLOXFasterHead(nn.Module):
                 origin_preds = torch.cat(origin_preds, 1)  # dims: [n, n_anchors_all, 4]
             else:
                 origin_preds = bbox_preds.new_zeros(1)
-
-            whwh = torch.Tensor([[stride_this_level_w, stride_this_level_h, stride_this_level_w, stride_this_level_h]]).type_as(bbox_preds)
+            # print(stride_this_level_w)
+            whwh = torch.Tensor([[640, 640, 640, 640]]).type_as(bbox_preds)
             return self.get_losses(
                 # imgs,
                 # x_shifts,
@@ -415,9 +415,11 @@ class YOLOXFasterHead(nn.Module):
 
         # num_fg = 0.0
         # num_gts = 0.0
-
+        print('qwe')
+        print(labels.shape)
         # calculate targets
-        nlabel = labels[:, 0].long().bincount(minlength=cls_preds.shape[0]).tolist()
+        # nlabel = labels[:, 0].long().bincount(minlength=cls_preds.shape[0]).tolist()
+        nlabel = (labels.sum(dim=2) > 0).sum(dim=1)  # number of objects
         batch_gt_classes = labels[:, 1].type_as(cls_preds).contiguous()  # [num_gt, 1]
         batch_org_gt_bboxes = labels[:, 2:6].contiguous()  # [num_gt, 4]  bbox: cx, cy, w, h
         batch_org_gt_bboxes.mul_(whwh)

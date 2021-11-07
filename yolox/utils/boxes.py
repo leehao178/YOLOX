@@ -8,8 +8,6 @@ import torch
 import torchvision
 import math
 import pdb
-# from yolox.evaluators import polyiou
-# from .iou import polyiou
 import time
 import cv2
 

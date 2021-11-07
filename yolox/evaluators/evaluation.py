@@ -301,16 +301,7 @@ def evaluation(detoutput, imageset, annopath, classnames, isnotmerge=True, iscou
     # annopath = r'PATH_TO_BE_CONFIGURED/{:s}.txt' # change the directory to the path of val/labelTxt, if you want to do evaluation on the valset
     # imagesetfile = r'PATH_TO_BE_CONFIGURED/valset.txt'
 
-    # For DOTA-v1.5
-    #classnames = ['plane', 'baseball-diamond', 'bridge', 'ground-track-field', 'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
-    #            'basketball-court', 'storage-tank',  'soccer-ball-field', 'roundabout', 'harbor', 'swimming-pool', 'helicopter', 'container-crane']
-    # For DOTA-v1.0
-    # classnames = ['plane', 'baseball-diamond', 'bridge', 'ground-track-field', 'small-vehicle', 'large-vehicle', 'ship', 'tennis-court',
-    #             'basketball-court', 'storage-tank',  'soccer-ball-field', 'roundabout', 'harbor', 'swimming-pool', 'helicopter', ']
-
     classaps = []
-    recs = []
-    precs = []
     map = 0
     skippedClassCount = 0
     for classname in classnames:
@@ -333,9 +324,15 @@ def evaluation(detoutput, imageset, annopath, classnames, isnotmerge=True, iscou
             print(ap)
         else:
             print('ap: ', ap)
-        recs.append(rec)
-        precs.append(prec)
-        classaps.append(ap)
+
+        classaps.append(str(ap.item()))
+
+        with open(os.path.join(detoutput, '{}_50.txt'.format(classname)), 'w') as f:
+            for i in rec.tolist():
+                f.write('{} '.format(i))
+            f.write('\n')
+            for i in prec.tolist():
+                f.write('{} '.format(i))
 
         # umcomment to show p-r curve of each category
         # plt.figure(figsize=(8,4))
@@ -346,15 +343,14 @@ def evaluation(detoutput, imageset, annopath, classnames, isnotmerge=True, iscou
     map = map/(len(classnames)-skippedClassCount)
     if iscountmAP:
         print(map)
+        classaps.append(str(map.item()))
     else:
         print('map:', map)
-        classaps.append(map)
+        
     # classaps = 100*np.array(classaps)
     # print('classaps: ', classaps)
 
     classaps75 = []
-    recs75 = []
-    precs75 = []
     map75 = 0
     skippedClassCount = 0
     for classname in classnames:
@@ -377,10 +373,15 @@ def evaluation(detoutput, imageset, annopath, classnames, isnotmerge=True, iscou
             print(ap)
         else:
             print('ap: ', ap)
-        recs75.append(rec)
-        precs75.append(prec)
-        classaps75.append(ap)
 
+        classaps75.append(str(ap.item()))
+
+        with open(os.path.join(detoutput, '{}_75.txt'.format(classname)), 'w') as f:
+            for i in rec.tolist():
+                f.write('{} '.format(i))
+            f.write('\n')
+            for i in prec.tolist():
+                f.write('{} '.format(i))
         # umcomment to show p-r curve of each category
         # plt.figure(figsize=(8,4))
         # plt.xlabel('recall')
@@ -390,12 +391,13 @@ def evaluation(detoutput, imageset, annopath, classnames, isnotmerge=True, iscou
     map75 = map75/(len(classnames)-skippedClassCount)
     if iscountmAP:
         print(map75)
+        classaps75.append(str(map75.item()))
     else:
         print('map75:', map75)
-        classaps75.append(map75)
+        
 
 
-    return recs, precs, classaps, recs75, precs75, classaps75
+    return classaps, classaps75
 
 
 if __name__ == '__main__':

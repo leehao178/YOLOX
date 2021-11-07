@@ -17,7 +17,7 @@ class Exp(MyExp):
         super(Exp, self).__init__()
 
         # ---------------- model config ---------------- #
-        self.num_classes = 15
+        self.num_classes = 8
         self.depth = 0.67
         self.width = 0.75
         self.act = 'silu'
@@ -37,7 +37,8 @@ class Exp(MyExp):
         self.multiscale_range = 5
         # You can uncomment this line to specify a multiscale range
         # self.random_size = (14, 26)
-        self.data_dir = "/home/danny/DataSet/dota_head_coco"
+        # self.data_dir = "/home/danny/DataSet/dota_head_coco"
+        self.data_dir = "/home/danny/DataSet/car8_head_coco"
         self.train_ann = "instances_train2017.json"
         self.val_ann = "instances_val2017.json"
 
@@ -50,7 +51,7 @@ class Exp(MyExp):
         self.mixup_scale = (0.5, 1.5)
         self.shear = 2.0
         self.perspective = 0.0
-        self.enable_mixup = True
+        self.enable_mixup = False
 
         # --------------- data augment config --------------- #
         self.enable_flip=True
@@ -76,7 +77,7 @@ class Exp(MyExp):
         # self.momentum = 0.937
         self.print_interval = 1
         self.eval_interval = 300
-        self.save_ckpt_interval = 30
+        self.save_ckpt_interval = 1
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # --------------  angles config --------------------- #

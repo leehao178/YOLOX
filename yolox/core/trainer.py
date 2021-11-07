@@ -204,7 +204,7 @@ class Trainer:
         self.save_ckpt(ckpt_name="latest")
 
         if (self.epoch + 1) % self.save_ckpt_interval == 0:
-            self.save_ckpt(ckpt_name="epoch_{}".format(self.epoch))
+            self.save_ckpt(ckpt_name="epoch_{}".format(self.epoch + 1))
 
         if (self.epoch + 1) % self.exp.eval_interval == 0:
             all_reduce_norm(self.model)
