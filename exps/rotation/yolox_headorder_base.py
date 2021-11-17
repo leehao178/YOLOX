@@ -21,7 +21,7 @@ class Exp(MyExp):
         self.depth = 0.67
         self.width = 0.75
         self.act = 'silu'
-        self.iou_loss = "iou"
+        self.iou_loss = "diou"
         self.obj_loss = "bce"
         self.cls_loss = "bce"
         self.ang_loss = "focalloss"

@@ -45,7 +45,7 @@ class IOUloss(nn.Module):
         # union
         area_u = area_p + area_g - area_i
         
-        iou = (area_i) / (area_u + 1e-16)  # IoU
+        iou = (area_i) / (area_u + 1e-16)  # IoU = (A∩B)/(A∪B)
 
         if self.loss_type == "giou" or self.loss_type == "diou" or self.loss_type == "ciou":
             c_tl = torch.min(
@@ -58,31 +58,38 @@ class IOUloss(nn.Module):
                 enclose_wh = (c_br - c_tl).clamp(min=0)
                 cw = enclose_wh[:, 0]
                 ch = enclose_wh[:, 1]
-                c2 = c2 = cw**2 + ch**2 + 1e-16
+                c2 = cw**2 + ch**2 + 1e-16
 
-                b1_x1, b1_y1 = pred[:, 0], pred[:, 1]
-                b1_x2, b1_y2 = pred[:, 2], pred[:, 3]
-                b2_x1, b2_y1 = target[:, 0], target[:, 1]
-                b2_x2, b2_y2 = target[:, 2], target[:, 3]
+                # b1_x1, b1_y1 = pred[:, 0], pred[:, 1]
+                # b1_x2, b1_y2 = pred[:, 2], pred[:, 3]
+                # b2_x1, b2_y1 = target[:, 0], target[:, 1]
+                # b2_x2, b2_y2 = target[:, 2], target[:, 3]
+                
+                # left = ((b2_x1 + b2_x2) - (b1_x1 + b1_x2))**2 / 4
+                # right = ((b2_y1 + b2_y2) - (b1_y1 + b1_y2))**2 / 4
+                # rho2 = left + right
 
-                left = ((b2_x1 + b2_x2) - (b1_x1 + b1_x2))**2 / 4
-                right = ((b2_y1 + b2_y2) - (b1_y1 + b1_y2))**2 / 4
-                rho2 = left + right
+
+                rho2 = (target[:, 0] - pred[:, 0])**2 + (target[:, 1] - pred[:, 1])**2
+
+
                 if self.loss_type == "diou":
                     diou = iou - rho2 / c2  # DIoU
                     loss = 1 - diou.clamp(min=-1.0, max=1.0)
                 else:
-                    w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1 + 1e-16
-                    w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1 + 1e-16
+                    # w1, h1 = b1_x2 - b1_x1, b1_y2 - b1_y1 + 1e-16
+                    # w2, h2 = b2_x2 - b2_x1, b2_y2 - b2_y1 + 1e-16
+                    w1, h1 = pred[:, 2], pred[:, 3]
+                    w2, h2 = target[:, 2], target[:, 3]
                     factor = 4 / math.pi**2
                     v = factor * torch.pow(torch.atan(w2 / h2) - torch.atan(w1 / h1), 2)
                     with torch.no_grad():
                         alpha = v / (v - iou + (1 + 1e-16))
-                        ciou = iou - (rho2 / c2 + v * alpha)  # CIoU
+                        ciou = iou - (rho2 / c2 + v * alpha)  # CIoU = DIou - αv
                     loss = 1 - ciou.clamp(min=-1.0, max=1.0)
             else:
-                area_c = torch.prod(c_br - c_tl, 1)
-                giou = iou - (area_c - area_u) / area_c.clamp(1e-16)  # GIoU
+                area_c = torch.prod(c_br - c_tl, 1)  # convex area
+                giou = iou - (area_c - area_u) / area_c.clamp(1e-16)  # GIoU = IoU - (C-A∪B)/C
                 
                 loss = 1 - giou.clamp(min=-1.0, max=1.0)
         else:
