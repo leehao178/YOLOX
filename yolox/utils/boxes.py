@@ -253,7 +253,7 @@ def postprocess_rotation_head(prediction, num_classes, num_angles, conf_thre=0.7
 #     area_i = torch.prod(br - tl, 2) * en  # * ((tl < br).all())
 #     return area_i / (area_a[:, None] + area_b - area_i)
 
-def bboxes_iou(bboxes_a, bboxes_b, xyxy=True, inplace=False):
+def bboxes_iou(bboxes_a, bboxes_b, xyxy=True, inplace=False, iou_mode='iou'):
     # if bboxes_a.shape[1] != 4 or bboxes_b.shape[1] != 4:
     #     raise IndexError
 
@@ -305,14 +305,87 @@ def bboxes_iou(bboxes_a, bboxes_b, xyxy=True, inplace=False):
                 (bboxes_b[:, :2] + bboxes_b[:, 2:] / 2),
             )
 
-            area_a = torch.prod(bboxes_a[:, 2:], 1)
-            area_b = torch.prod(bboxes_b[:, 2:], 1)
+            area_g = torch.prod(bboxes_a[:, 2:], 1)
+            area_p = torch.prod(bboxes_b[:, 2:], 1)
 
-        hw = (br - tl).clamp(min=0)  # [rows, 2]
-        area_i = torch.prod(hw, 2)
+            br_hw = torch.min(
+                (bboxes_a[:, None, :2] + bboxes_a[:, None, 2:] / 2),
+                (bboxes_b[:, :2] + bboxes_b[:, 2:] / 2),
+            )
+            br_hw.sub_(tl)  # hw
+            # print('test')
+            # print(br_hw.shape)
+            br_hw.clamp_min_(0)  # [rows, 2]
+            # print(br_hw.shape)
+            del tl
+            area_i = torch.prod(br_hw, 2)  # area
+            del br_hw
 
-        ious = area_i / (area_a[:, None] + area_b - area_i)
-        return ious
+        # union
+        # print('union')
+        # print(area_g.shape)
+        # print(area_g[:, None].shape)
+        # print(area_p.shape)
+        # print((area_g[:, None] + area_p).shape)
+        # print(area_i.shape)
+        area_u = (area_g[:, None] + area_p - area_i)
+
+        ious = area_i / (area_u + 1e-16)
+
+        if iou_mode == "giou" or iou_mode == "diou" or iou_mode == "ciou":
+            # print(bboxes_a.shape)
+            # print(bboxes_b.shape)
+            c_tl = torch.min(
+                (bboxes_b[:, :2] - bboxes_b[:, 2:] / 2), (bboxes_a[:, None, :2] - bboxes_a[:, None, 2:] / 2)
+            )
+            c_br = torch.max(
+                (bboxes_b[:, :2] + bboxes_b[:, 2:] / 2), (bboxes_a[:, None, :2] + bboxes_a[:, None, 2:] / 2)
+            )
+            if iou_mode == "diou" or iou_mode == "ciou":
+                enclose_wh = (c_br - c_tl).clamp(min=0)
+                cw = enclose_wh[:, 0]
+                ch = enclose_wh[:, 1]
+                # c2 = cw**2 + ch**2 + 1e-16
+                # print(cw.shape)
+                c2 = torch.prod(cw, 1) + torch.prod(ch, 1) + 1e-16
+
+
+                rho2 = (bboxes_a[:, None, 0] - bboxes_b[:, 0])**2 + (bboxes_a[:, None, 1] - bboxes_b[:, 1])**2
+
+
+                if iou_mode == "diou":
+                    # print('diou')
+                    # print(rho2.shape)
+                    # print(c2.shape)
+                    # print(c2[:, None].shape)
+                    # print(ious.shape)
+                    # print(rho2 / c2[:, None])
+                    diou = ious - rho2 / c2[:, None]  # DIoU
+                    return diou
+                else:
+                    w1, h1 = bboxes_b[:, 2], bboxes_b[:, 3]
+                    w2, h2 = bboxes_a[:, None, 2], bboxes_a[:, None, 3]
+                    factor = 4 / math.pi**2
+                    # print('ciou')
+                    # print(w2.shape)
+                    # print(h2.shape)
+                    # print(torch.atan(w2 / h2) - torch.atan(w1 / h1))
+                    v = factor * torch.pow(torch.atan(w2 / h2) - torch.atan(w1 / h1), 2)
+                    with torch.no_grad():
+                        alpha = v / (v - ious + (1 + 1e-16))
+                        ciou = ious - (rho2 / c2[:, None] + v * alpha)  # CIoU = DIou - αv
+                    return ciou
+            else:
+                c_br.sub_(c_tl)  # hw
+                c_br.clamp_min_(0)  # [rows, 2]
+                del c_tl
+                area_c = torch.prod(c_br, 2)  # convex area
+                del c_br
+
+                giou = ious - (area_c - area_u) / (area_c + 1e-16)  # GIoU = IoU - (C-A∪B)/C
+                return giou
+        else:
+            return ious
 
 def matrix_iou(a, b):
     """
