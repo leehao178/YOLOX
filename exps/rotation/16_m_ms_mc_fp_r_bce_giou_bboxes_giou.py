@@ -17,21 +17,20 @@ class Exp(MyExp):
         super(Exp, self).__init__()
 
         # ---------------- model config ---------------- #
-        self.num_classes = 8
+        self.num_classes = 15
         self.depth = 0.67
         self.width = 0.75
         self.act = 'silu'
-        self.iou_loss = "iou"
+        self.iou_loss = "giou"
         self.obj_loss = "bce"
         self.cls_loss = "bce"
-        self.ang_loss = "focalloss"
+        self.ang_loss = "bce"
         self.head_loss = "bce"
 
-        self.bboxes_iou_mode = "iou"
-
+        self.bboxes_iou_mode = "giou"
         # ---------------- dataloader config ---------------- #
         # set worker to 4 for shorter dataloader init time
-        self.data_num_workers = 4
+        self.data_num_workers = 2
         self.input_size = (800, 800)
         # Actual multiscale ranges: [640-5*32, 640+5*32].
         # To disable multiscale training, set the
@@ -39,7 +38,7 @@ class Exp(MyExp):
         self.multiscale_range = 5
         # You can uncomment this line to specify a multiscale range
         # self.random_size = (14, 26)
-        self.data_dir = "/home/danny/DataSet/dota_head_coco"
+        self.data_dir = "/home/aimlusr/dataset/dota10"
         self.train_ann = "instances_train2017.json"
         self.val_ann = "instances_val2017.json"
 
@@ -48,17 +47,17 @@ class Exp(MyExp):
         self.mixup_prob = 1.0
         self.hsv_prob = 1.0
         self.translate = 0.1
-        self.mosaic_scale = (1.0, 1.1)
+        self.mosaic_scale = (1, 1.5)
         self.mixup_scale = (0.5, 1.5)
         self.shear = 2.0
         self.perspective = 0.0
-        self.enable_mixup = True
+        self.enable_mixup = False
 
         # --------------- data augment config --------------- #
         self.enable_flip=True
-        self.flip_prob=1.0
+        self.flip_prob=0.5
         self.enable_rotate=True
-        self.rotate_prob=1.0
+        self.rotate_prob=0.5
         self.degrees = 45
 
         epoch_scale = 1
@@ -78,7 +77,7 @@ class Exp(MyExp):
         # self.momentum = 0.937
         self.print_interval = 1
         self.eval_interval = 300
-        self.save_ckpt_interval = 1
+        self.save_ckpt_interval = 30
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # --------------  angles config --------------------- #
@@ -92,7 +91,7 @@ class Exp(MyExp):
         self.nmsthre = 0.1
     
     def get_model(self):
-        from yolox.models import YOLOXHeadOrder, SWIMPAFPN, YOLOXRotateHeadOrderHead
+        from yolox.models import YOLOXHeadOrder, YOLOPAFPN, YOLOXRotateHeadOrderHead
 
         def init_yolo(M):
             for m in M.modules():
@@ -102,7 +101,7 @@ class Exp(MyExp):
 
         if getattr(self, "model", None) is None:
             in_channels = [256, 512, 1024]
-            backbone = SWIMPAFPN(self.depth, self.width, in_channels=in_channels)
+            backbone = YOLOPAFPN(self.depth, self.width, in_channels=in_channels)
             head = YOLOXRotateHeadOrderHead(num_classes=self.num_classes, 
                                             num_angles=self.num_angles, 
                                             iou_loss=self.iou_loss,

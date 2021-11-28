@@ -27,7 +27,7 @@ class Exp(MyExp):
         self.ang_loss = "bce"
         self.head_loss = "bce"
 
-        self.bboxes_iou_mode = "iou"
+        self.bboxes_iou_mode = "giou"
         # ---------------- dataloader config ---------------- #
         # set worker to 4 for shorter dataloader init time
         self.data_num_workers = 2
@@ -51,7 +51,7 @@ class Exp(MyExp):
         self.mixup_scale = (0.5, 1.5)
         self.shear = 2.0
         self.perspective = 0.0
-        self.enable_mixup = True
+        self.enable_mixup = False
 
         # --------------- data augment config --------------- #
         self.enable_flip=True
