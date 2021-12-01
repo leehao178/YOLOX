@@ -20,7 +20,8 @@ class Exp(MyExp):
         self.num_classes = 15
         self.depth = 0.67
         self.width = 0.75
-        self.act = 'silu'
+        # self.act = 'silu'
+        self.act = 'smu'
         self.iou_loss = "iou"
         self.obj_loss = "bce"
         self.cls_loss = "bce"
@@ -103,7 +104,7 @@ class Exp(MyExp):
 
         if getattr(self, "model", None) is None:
             in_channels = [256, 512, 1024]
-            backbone = SWIMPAFPN(self.depth, self.width, in_channels=in_channels)
+            backbone = SWIMPAFPN(self.depth, self.width, in_channels=in_channels, act=self.act)
             head = YOLOXRotateHeadOrderHead(num_classes=self.num_classes, 
                                             num_angles=self.num_angles, 
                                             iou_loss=self.iou_loss,
@@ -115,7 +116,8 @@ class Exp(MyExp):
                                             label_raduius=self.label_raduius,
                                             bboxes_iou_mode=self.bboxes_iou_mode,
                                             width=self.width, 
-                                            in_channels=in_channels)
+                                            in_channels=in_channels,
+                                            act=self.act)
             self.model = YOLOXHeadOrder(backbone, head)
 
         self.model.apply(init_yolo)
