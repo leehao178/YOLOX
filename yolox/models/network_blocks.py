@@ -23,6 +23,7 @@ def get_activation(name="silu", inplace=True):
         module = nn.LeakyReLU(0.1, inplace=inplace)
     elif name == "smu":
         module = SMU()
+        # module = SMU(mu=1.0)
     elif name == "smu1":
         module = SMU1()
     else:

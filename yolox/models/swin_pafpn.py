@@ -127,9 +127,9 @@ class SWIMPAFPN(nn.Module):
         # print(f_out0.shape)
         # print(f_out1.shape)
 
-        print(pan_out2.shape)
-        print(pan_out1.shape)
-        print(pan_out0.shape)
+        # print(pan_out2.shape)
+        # print(pan_out1.shape)
+        # print(pan_out0.shape)
 
 
         outputs = (pan_out2, pan_out1, pan_out0)

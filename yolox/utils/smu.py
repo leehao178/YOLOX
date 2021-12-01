@@ -18,7 +18,7 @@ class SMU(nn.Module):
         >>> x = torch.Tensor([0.6,-0.3])
         >>> x = smu(x)
     '''
-    def __init__(self, alpha = 0.25):
+    def __init__(self, alpha=0.25, mu=1000000.0):
         '''
         Initialization.
         INPUT:
@@ -28,7 +28,7 @@ class SMU(nn.Module):
         super(SMU,self).__init__()
         self.alpha = alpha
         # initialize mu
-        self.mu = torch.nn.Parameter(torch.tensor(1000000.0)) 
+        self.mu = torch.nn.Parameter(torch.tensor(mu)) 
         
     def forward(self, x):
         return ((1+self.alpha)*x + (1-self.alpha)*x*torch.erf(self.mu*(1-self.alpha)*x))/2
