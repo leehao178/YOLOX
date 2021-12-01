@@ -98,7 +98,7 @@ class SWIMPAFPN(nn.Module):
         x2 = out_features[0]
         x1 = out_features[1]
         x0 = out_features[2]
-        print('=========================')
+        # print('=========================')
         # print(x2.shape)
         # print(x1.shape)
         # print(x0.shape)
