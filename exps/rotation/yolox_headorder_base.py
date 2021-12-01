@@ -17,7 +17,7 @@ class Exp(MyExp):
         super(Exp, self).__init__()
 
         # ---------------- model config ---------------- #
-        self.num_classes = 8
+        self.num_classes = 15
         self.depth = 0.67
         self.width = 0.75
         self.act = 'silu'
@@ -39,6 +39,7 @@ class Exp(MyExp):
         self.multiscale_range = 5
         # You can uncomment this line to specify a multiscale range
         # self.random_size = (14, 26)
+        # self.data_dir = "/home/danny/DataSet/car8_head_coco"
         self.data_dir = "/home/danny/DataSet/dota_head_coco"
         self.train_ann = "instances_train2017.json"
         self.val_ann = "instances_val2017.json"
@@ -49,7 +50,7 @@ class Exp(MyExp):
         self.hsv_prob = 1.0
         self.translate = 0.1
         self.mosaic_scale = (1.0, 1.1)
-        self.mixup_scale = (0.5, 1.5)
+        self.mixup_scale = (1.0, 1.0)
         self.shear = 2.0
         self.perspective = 0.0
         self.enable_mixup = True

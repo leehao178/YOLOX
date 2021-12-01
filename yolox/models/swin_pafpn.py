@@ -98,7 +98,13 @@ class SWIMPAFPN(nn.Module):
         x2 = out_features[0]
         x1 = out_features[1]
         x0 = out_features[2]
-        # [x2, x1, x0] = features
+        print('=========================')
+        # print(x2.shape)
+        # print(x1.shape)
+        # print(x0.shape)
+
+        # "dark3", "dark4", "dark5"
+        # [x2,     x1,      x0] = features
 
         fpn_out0 = self.lateral_conv0(x0)  # 1024->512/32
         f_out0 = self.upsample(fpn_out0)  # 512/16
@@ -117,6 +123,14 @@ class SWIMPAFPN(nn.Module):
         p_out0 = self.bu_conv1(pan_out1)  # 512->512/32
         p_out0 = torch.cat([p_out0, fpn_out0], 1)  # 512->1024/32
         pan_out0 = self.C3_n4(p_out0)  # 1024->1024/32
+
+        # print(f_out0.shape)
+        # print(f_out1.shape)
+
+        print(pan_out2.shape)
+        print(pan_out1.shape)
+        print(pan_out0.shape)
+
 
         outputs = (pan_out2, pan_out1, pan_out0)
         return outputs

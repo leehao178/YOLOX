@@ -254,8 +254,8 @@ def postprocess_rotation_head(prediction, num_classes, num_angles, conf_thre=0.7
 #     return area_i / (area_a[:, None] + area_b - area_i)
 
 def bboxes_iou(bboxes_a, bboxes_b, xyxy=True, inplace=False, iou_mode='iou'):
-    # if bboxes_a.shape[1] != 4 or bboxes_b.shape[1] != 4:
-    #     raise IndexError
+    if bboxes_a.shape[1] != 4 or bboxes_b.shape[1] != 4:
+        raise IndexError
 
     if inplace:
         if xyxy:
@@ -385,6 +385,7 @@ def bboxes_iou(bboxes_a, bboxes_b, xyxy=True, inplace=False, iou_mode='iou'):
                 giou = ious - (area_c - area_u) / (area_c + 1e-16)  # GIoU = IoU - (C-A∪B)/C
                 return giou
         else:
+            # print('===============================================hnsrthstrhrsth')
             return ious
 
 def matrix_iou(a, b):

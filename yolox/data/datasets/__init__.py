@@ -14,5 +14,4 @@ from .coco_head_order import COCOHeadOrderDataset
 from .mosaicdetection_headless import MosaicHeadLessDetection
 from .mosaicdetection_headorder import MosaicHeadOrderDetection
 
-from .car_classes import CAR_CLASSES, CAR8_CLASSES
-from .dota_classes import DOTA_10_CLASSES, DOTA_15_CLASSES
+from .classes import CAR_CLASSES, CAR8_CLASSES, DOTA_10_CLASSES, DOTA_15_CLASSES, DOTA_20_CLASSES, HRSC2016_CLASSES

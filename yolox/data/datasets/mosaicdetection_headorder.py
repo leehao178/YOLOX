@@ -416,14 +416,25 @@ class MosaicHeadOrderDetection(Dataset):
         return flip_img, origin_labels
 
     def mixup(self, img1, origin_labels, input_dim):
-        cp_index = random.randint(0, self.__len__() - 1)
+        cp_labels = []
+        while len(cp_labels) == 0:
+            cp_index = random.randint(0, self.__len__() - 1)
+            cp_labels = self._dataset.load_anno(cp_index)
         img2, cp_labels, _, _ = self._dataset.pull_item(cp_index)
+        # print(img1.shape)
+        # print(img2.shape)
         r = np.random.beta(32.0, 32.0)  # mixup ratio, alpha=beta=32.0
-        mixup_img = (img1 * r + img2 * (1 - r)).astype(np.uint8)
+        # print(r)
+        mixup_img = (img1 * r + img2 * (1 - r))
         cp_labels = xyxy2cxcywh(cp_labels.copy())
         mixup_labels = np.concatenate((origin_labels, cp_labels), 0)
+        # print(origin_labels.shape)
+        # print(cp_labels.shape)
+        # print(mixup_labels.shape)
+        # print(mixup_img.shape)
 
-        return mixup_img, mixup_labels
+
+        return mixup_img.astype(np.uint8), mixup_labels
 
     def mixup2(self, origin_img, origin_labels, input_dim):
         jit_factor = random.uniform(*self.mixup_scale)

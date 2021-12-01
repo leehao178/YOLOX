@@ -23,8 +23,6 @@ from yolox.evaluators import evaluation ,mergebypoly, evaluation_trans, draw_DOT
 
 import numpy as np
 
-from yolox.data.datasets import DOTA_10_CLASSES
-
 IMAGE_EXT = [".jpg", ".jpeg", ".webp", ".bmp", ".png"]
 
 
@@ -63,6 +61,7 @@ def make_parser():
         type=str,
         help="device to run our model, can either be cpu or gpu",
     )
+    parser.add_argument("--classes", default="dota10", type=str, help="dataset name")
     parser.add_argument("--conf", default=0.05, type=float, help="test conf")
     parser.add_argument("--nms", default=0.1, type=float, help="test nms threshold")
     parser.add_argument("--tsize", default=800, type=int, help="test img size")
@@ -186,7 +185,6 @@ class Predictor(object):
                 oriname = splitname[0]  # 獲得待merge圖像的原圖像名稱 eg:P706
 
                 # 目標所屬圖片名稱_分割id 置信度 poly classname
-                # lines = img_name + ' ' + str(score.item()) + ' ' + ' '.join(list(map(str, poly))) + ' ' + DOTA_10_CLASSES[cls_id]
                 lines = '{} {} {} {} {} {} {} {} {} {} {}'.format(  img_name, 
                                                                     score.item(), 
                                                                     poly[0][0],
@@ -197,7 +195,7 @@ class Predictor(object):
                                                                     poly[2][1],
                                                                     poly[3][0],
                                                                     poly[3][1],
-                                                                    DOTA_10_CLASSES[cls_id])
+                                                                    self.cls_names[cls_id])
                 # 移除之前的輸出文件夾,並新建輸出文件夾
                 if not os.path.exists(out_path):
                     os.makedirs(out_path)  # make new output folder
@@ -253,6 +251,21 @@ def main(exp, args):
     res_folder = os.path.join(file_name, "result")
     os.makedirs(res_folder, exist_ok=True)
 
+    if args.classes == 'dota10':
+        from yolox.data.datasets import DOTA_10_CLASSES as CLASSES
+    elif args.classes == 'dota15':
+        from yolox.data.datasets import DOTA_15_CLASSES as CLASSES
+    elif args.classes == 'dota20':
+        from yolox.data.datasets import DOTA_20_CLASSES as CLASSES
+    elif args.classes == 'hrsc2016':
+        from yolox.data.datasets import HRSC2016_CLASSES as CLASSES
+    elif args.classes == 'car':
+        from yolox.data.datasets import CAR_CLASSES as CLASSES
+    elif args.classes == 'car8':
+        from yolox.data.datasets import CAR8_CLASSES as CLASSES
+    else:
+        logger.info('未選擇類別')
+
     logger.info("Args: {}".format(args))
     if args.conf is not None:
         exp.test_conf = args.conf
@@ -289,13 +302,13 @@ def main(exp, args):
                     logger.info("\tFusing model...")
                     model = fuse_model(model)
                 
-                predictor = Predictor(model, exp, DOTA_10_CLASSES, args.device)
+                predictor = Predictor(model, exp, CLASSES, args.device)
                 image_demo(predictor, args.path, before_merge)
                 classap, classap75 = evaluation(
                     detoutput=detection,
                     imageset=r'/home/aimlusr/dataset/dota10/val/images', # 原始未裁切圖片
                     annopath=r'/home/aimlusr/dataset/dota10/val/labelTxt/{:s}.txt',
-                    classnames=DOTA_10_CLASSES,
+                    classnames=CLASSES,
                     isnotmerge=True,
                     iscountmAP=True
                 )
@@ -332,7 +345,7 @@ def main(exp, args):
             logger.info("\tFusing model...")
             model = fuse_model(model)
         
-        predictor = Predictor(model, exp, DOTA_10_CLASSES, args.device)
+        predictor = Predictor(model, exp, CLASSES, args.device)
         image_demo(predictor, args.path, before_merge)
 
         # see demo for example
