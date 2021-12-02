@@ -19,3 +19,4 @@ from .utils import *
 # from .iou import *
 
 from .smu import SMU, SMU1
+from .adaPool.adaPool import AdaPool3d, AdaPool2d

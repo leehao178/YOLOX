@@ -31,7 +31,7 @@ class SMU(nn.Module):
         self.mu = torch.nn.Parameter(torch.tensor(mu)) 
         
     def forward(self, x):
-        return ((1+self.alpha)*x + (1-self.alpha)*x*torch.erf(self.mu*(1-self.alpha)*x))/2
+        return ((1+self.alpha)*x + (1-self.alpha)*x*torch.erf(self.mu*(1-self.alpha)*x))/2 + 1e-16
         
         
 class SMU1(nn.Module):

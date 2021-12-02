@@ -35,6 +35,7 @@ class YOLOXRotateHeadOrderHead(nn.Module):
         in_channels=[256, 512, 1024],
         act="silu",
         depthwise=False,
+        alpha=None
     ):
         """
         Args:
@@ -159,7 +160,7 @@ class YOLOXRotateHeadOrderHead(nn.Module):
 
         self.use_l1 = False
         self.l1_loss = nn.L1Loss(reduction="none")
-        self.iou_loss = IOUloss(reduction="none", loss_type=iou_loss)
+        self.iou_loss = IOUloss(reduction="none", loss_type=iou_loss, alpha=alpha)
         self.strides = strides
         self.grids = [torch.zeros(1)] * len(in_channels)
         

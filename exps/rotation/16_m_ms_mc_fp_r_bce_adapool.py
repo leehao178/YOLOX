@@ -20,12 +20,14 @@ class Exp(MyExp):
         self.num_classes = 15
         self.depth = 0.67
         self.width = 0.75
-        self.act = 'smu'
+        self.act = 'silu'
         self.iou_loss = "iou"
         self.obj_loss = "bce"
         self.cls_loss = "bce"
         self.ang_loss = "bce"
         self.head_loss = "bce"
+
+        self.pooling = "adapool"
 
         # ---------------- dataloader config ---------------- #
         # set worker to 4 for shorter dataloader init time
@@ -100,7 +102,7 @@ class Exp(MyExp):
 
         if getattr(self, "model", None) is None:
             in_channels = [256, 512, 1024]
-            backbone = YOLOPAFPN(self.depth, self.width, in_channels=in_channels, act=self.act)
+            backbone = YOLOPAFPN(self.depth, self.width, in_channels=in_channels, act=self.act, pooling=self.pooling)
             head = YOLOXRotateHeadOrderHead(num_classes=self.num_classes, 
                                             num_angles=self.num_angles, 
                                             iou_loss=self.iou_loss,

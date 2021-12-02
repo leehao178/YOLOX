@@ -373,7 +373,7 @@ def bboxes_iou(bboxes_a, bboxes_b, xyxy=True, inplace=False, iou_mode='iou'):
                     v = factor * torch.pow(torch.atan(w2 / h2) - torch.atan(w1 / h1), 2)
                     with torch.no_grad():
                         alpha = v / (v - ious + (1 + 1e-16))
-                        ciou = ious - (rho2 / c2[:, None] + v * alpha)  # CIoU = DIou - αv
+                    ciou = ious - (rho2 / c2[:, None] + v * alpha)  # CIoU = DIou - αv
                     return ciou
             else:
                 c_br.sub_(c_tl)  # hw

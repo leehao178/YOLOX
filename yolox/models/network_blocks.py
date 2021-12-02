@@ -4,7 +4,8 @@
 
 import torch
 import torch.nn as nn
-from yolox.utils import SMU, SMU1 
+from yolox.utils import SMU, SMU1
+from yolox.utils import AdaPool3d, AdaPool2d
 
 class SiLU(nn.Module):
     """export-friendly version of nn.SiLU()"""
@@ -22,8 +23,8 @@ def get_activation(name="silu", inplace=True):
     elif name == "lrelu":
         module = nn.LeakyReLU(0.1, inplace=inplace)
     elif name == "smu":
-        module = SMU()
-        # module = SMU(mu=1.0)
+        # module = SMU(mu=1000000.0)
+        module = SMU(mu=1.0)
     elif name == "smu1":
         module = SMU1()
     else:
@@ -128,17 +129,25 @@ class SPPBottleneck(nn.Module):
     """Spatial pyramid pooling layer used in YOLOv3-SPP"""
 
     def __init__(
-        self, in_channels, out_channels, kernel_sizes=(5, 9, 13), activation="silu"
+        self, in_channels, out_channels, kernel_sizes=(5, 9, 13), activation="silu", pooling='maxpool'
     ):
         super().__init__()
         hidden_channels = in_channels // 2
         self.conv1 = BaseConv(in_channels, hidden_channels, 1, stride=1, act=activation)
-        self.m = nn.ModuleList(
-            [
-                nn.MaxPool2d(kernel_size=ks, stride=1, padding=ks // 2)
-                for ks in kernel_sizes
-            ]
-        )
+        if pooling == 'maxpool':
+            self.m = nn.ModuleList(
+                [   
+                    nn.MaxPool2d(kernel_size=ks, stride=1, padding=ks // 2)
+                    for ks in kernel_sizes
+                ]
+            )
+        else:
+            self.m = nn.ModuleList(
+                [   
+                    AdaPool2d(kernel_size=ks, stride=1, beta=(1,1))
+                    for ks in kernel_sizes
+                ]
+            )
         conv2_channels = hidden_channels * (len(kernel_sizes) + 1)
         self.conv2 = BaseConv(conv2_channels, out_channels, 1, stride=1, act=activation)
 

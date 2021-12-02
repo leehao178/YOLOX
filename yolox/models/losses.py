@@ -7,10 +7,11 @@ import torch.nn as nn
 import math
 
 class IOUloss(nn.Module):
-    def __init__(self, reduction="none", loss_type="iou"):
+    def __init__(self, reduction="none", loss_type="iou", alpha=None):
         super(IOUloss, self).__init__()
         self.reduction = reduction
         self.loss_type = loss_type
+        self.alpha = alpha
 
     def forward(self, pred, target):
         # pred = [num, [x, y, w, h]] torch.Size([261, 4])
@@ -44,8 +45,11 @@ class IOUloss(nn.Module):
         
         # union
         area_u = area_p + area_g - area_i
-        
-        iou = (area_i) / (area_u + 1e-16)  # IoU = (A∩B)/(A∪B)
+
+        if self.alpha:
+            iou = torch.pow((area_i) / (area_u + 1e-16), self.alpha)  # IoU = (A∩B)/(A∪B)
+        else:
+            iou = (area_i) / (area_u + 1e-16)  # IoU = (A∩B)/(A∪B)
 
         if self.loss_type == "giou" or self.loss_type == "diou" or self.loss_type == "ciou":
             c_tl = torch.min(
@@ -58,7 +62,10 @@ class IOUloss(nn.Module):
                 enclose_wh = (c_br - c_tl).clamp(min=0)
                 cw = enclose_wh[:, 0]
                 ch = enclose_wh[:, 1]
-                c2 = cw**2 + ch**2 + 1e-16
+                if self.alpha:
+                    c2 = (cw**2 + ch**2) ** self.alpha + 1e-16
+                else:
+                    c2 = cw**2 + ch**2 + 1e-16
 
                 # b1_x1, b1_y1 = pred[:, 0], pred[:, 1]
                 # b1_x2, b1_y2 = pred[:, 2], pred[:, 3]
@@ -68,9 +75,12 @@ class IOUloss(nn.Module):
                 # left = ((b2_x1 + b2_x2) - (b1_x1 + b1_x2))**2 / 4
                 # right = ((b2_y1 + b2_y2) - (b1_y1 + b1_y2))**2 / 4
                 # rho2 = left + right
+                
+                if self.alpha:
+                    rho2 = ((target[:, 0] - pred[:, 0])**2 + (target[:, 1] - pred[:, 1])**2) ** self.alpha
+                else:
+                    rho2 = (target[:, 0] - pred[:, 0])**2 + (target[:, 1] - pred[:, 1])**2
 
-
-                rho2 = (target[:, 0] - pred[:, 0])**2 + (target[:, 1] - pred[:, 1])**2
 
 
                 if self.loss_type == "diou":
@@ -84,12 +94,18 @@ class IOUloss(nn.Module):
                     factor = 4 / math.pi**2
                     v = factor * torch.pow(torch.atan(w2 / h2) - torch.atan(w1 / h1), 2)
                     with torch.no_grad():
-                        alpha = v / (v - iou + (1 + 1e-16))
-                        ciou = iou - (rho2 / c2 + v * alpha)  # CIoU = DIou - αv
+                        alpha_ciou = v / (v - iou + (1 + 1e-16))
+                    if self.alpha:
+                        iou - (rho2 / c2 + torch.pow(v * alpha_ciou + 1e-16, self.alpha))  # CIoU
+                    else:
+                        ciou = iou - (rho2 / c2 + v * alpha_ciou)  # CIoU = DIou - αv
                     loss = 1 - ciou.clamp(min=-1.0, max=1.0)
             else:
                 area_c = torch.prod(c_br - c_tl, 1)  # convex area
-                giou = iou - (area_c - area_u) / area_c.clamp(1e-16)  # GIoU = IoU - (C-A∪B)/C
+                if self.alpha:
+                    giou = iou - torch.pow((area_c - area_u) / area_c + 1e-16, self.alpha)  # GIoU
+                else:
+                    giou = iou - (area_c - area_u) / area_c.clamp(1e-16)  # GIoU = IoU - (C-A∪B)/C
                 
                 loss = 1 - giou.clamp(min=-1.0, max=1.0)
         else:
