@@ -17,7 +17,7 @@ from .network_blocks import BaseConv, DWConv
 import numpy as np  # rotation
 
 
-class YOLOXRotateHeadOrder3BranchHead(nn.Module):
+class YOLOXRotateHeadOrderHydraHead(nn.Module):
     def __init__(
         self,
         num_classes,

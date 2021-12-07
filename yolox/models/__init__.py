@@ -14,7 +14,7 @@ from .yolox import YOLOX
 # YOLOX Head
 from .yolo_head_rotate_less import YOLOXRotateHeadLessHead
 from .yolo_head_rotate_order import YOLOXRotateHeadOrderHead
-from .yolo_head_rotate_order_3branch import YOLOXRotateHeadOrder3BranchHead
+from .yolo_head_rotate_order_hydra import YOLOXRotateHeadOrderHydraHead
 from .yolo_head_faster import YOLOXFasterHead
 
 # YOLOX
