@@ -146,7 +146,7 @@ def GetFileFromThisRootDir(dir,ext = None):
         allfiles.append(filepath)
   return allfiles
 
-def mergebase(srcpath, dstpath, nms):
+def mergebase(srcpath, dstpath, nms, ismulti_cls_nms=False):
     """
     將源路徑中所有的txt目標信息,經nms後存入目標路徑中的同名txt
     @param srcpath: 合併前信息保存的txt源路徑
@@ -195,7 +195,10 @@ def mergebase(srcpath, dstpath, nms):
                 nameboxdict[oriname].append(det)
                 nameboxdict_classname[oriname].append(det_classname)
 
-            nameboxnmsdict = nmsbynamedict(nameboxdict, nameboxdict_classname, nms, nms_thresh)  # 對nameboxdict元組進行nms
+            if ismulti_cls_nms:
+                pass
+            else:
+                nameboxnmsdict = nmsbynamedict(nameboxdict, nameboxdict_classname, nms, nms_thresh)  # 對nameboxdict元組進行nms
             with open(dstname, 'w') as f_out:
                 for imgname in nameboxnmsdict:  # 'P706'
                     for det in nameboxnmsdict[imgname]:  # 取出對應圖片的nms後的目標信息
@@ -218,7 +221,7 @@ def mergebyrec(srcpath, dstpath):
     mergebase(srcpath,
               dstpath,
               py_cpu_nms)
-def mergebypoly(srcpath, dstpath):
+def mergebypoly(srcpath, dstpath, ismulti_cls_nms=False):
     """
     @param srcpath: result files before merge and nms.txt的信息格式為:[P0770__1__0___0 confidence poly 'classname']
     @param dstpath: result files after merge and nms.保存的txt信息格式為:[P0770 confidence poly 'classname']
@@ -226,9 +229,14 @@ def mergebypoly(srcpath, dstpath):
     # srcpath = r'/home/dingjian/evaluation_task1/result/faster-rcnn-59/comp4_test_results'
     # dstpath = r'/home/dingjian/evaluation_task1/result/faster-rcnn-59/testtime'
 
-    mergebase(srcpath,
-              dstpath,
-              py_cpu_nms_poly)
+    if ismulti_cls_nms:
+        mergebase(srcpath,
+                dstpath,
+                py_cpu_nms_poly)
+    else:
+        mergebase(srcpath,
+                dstpath,
+                py_cpu_nms_poly)
 
 def rbox2txt(rbox, classname, conf, img_name, out_path, pi_format=False):
     """
@@ -267,7 +275,7 @@ def rbox2txt(rbox, classname, conf, img_name, out_path, pi_format=False):
 
 def evaluation_trans(srcpath, dstpath):
     """
-將srcpath文件夾中的所有txt中的目標提取出來,按照目標類別分別存入 Task1_類別名.txt中:
+    將srcpath文件夾中的所有txt中的目標提取出來,按照目標類別分別存入 Task1_類別名.txt中:
             txt中的內容格式:  目標所屬原始圖片名稱 置信度 poly
     @param srcpath: 存放圖片的目標檢測結果(文件夾,內含多個txt)
                     txt中的內容格式: 目標所屬圖片名稱 置信度 poly 'classname'
@@ -358,8 +366,27 @@ def draw_DOTA_image(imgsrcpath, imglabelspath, dstpath, extractclassname, thickn
         cv2.imwrite(img_savename, img)
 
 
-
-
+def multi_classes_nms(srcpath):
+    for classnametxt in os.listdir(srcpath):
+        
+        imgs_dict = {}
+        with open(os.path.join(srcpath, classnametxt), mode='r') as f:
+            for imgs_det in f.readlines():
+                img, conf, x1, y1, x2, y2, x3, y3, x4, y4 = imgs_det.replace('\n', '').split(' ')
+                if img in imgs_dict:
+                    imgs_dict[img].append([float(x1), float(y1), float(x2), float(y2), float(x3), float(y3), float(x4), float(y4), float(conf)])
+                else:
+                    imgs_dict[img] = [[float(x1), float(y1), float(x2), float(y2), float(x3), float(y3), float(x4), float(y4), float(conf)]]
+        class_lines = []
+        for img, dets in imgs_dict.items():
+            keep = py_cpu_nms_poly(np.array(dets), 0.1)
+            for i in keep:
+                # print(keep)
+                # print(dets)
+                class_lines.append('{} {} {} {} {} {} {} {} {} {}\n'.format( img, dets[i][8], dets[i][0], dets[i][1], dets[i][2], dets[i][3], dets[i][4], dets[i][5], dets[i][6], dets[i][7]))
+        os.makedirs(os.path.join(srcpath, 'nms'), exist_ok=True)
+        with open(os.path.join(srcpath, 'nms', classnametxt), mode='w') as nf:
+            nf.writelines(class_lines)
 
 
 

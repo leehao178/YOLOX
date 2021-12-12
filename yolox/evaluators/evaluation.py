@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from yolox.utils.iou import polyiou
 from functools import partial
 import pdb
-from .evaluation_utils import mergebypoly, evaluation_trans, image2txt, draw_DOTA_image
+from .evaluation_utils import mergebypoly, evaluation_trans, image2txt, draw_DOTA_image, multi_classes_nms
 
 def parse_gt(filename):
     """
@@ -262,7 +262,7 @@ def voc_eval(detpath,
 
     return rec, prec, ap
 
-def evaluation(detoutput, imageset, annopath, classnames, isnotmerge=True, iscountmAP=False):
+def evaluation(detoutput, imageset, annopath, classnames, isnotmerge=True, iscountmAP=False, ismulti_cls_nms=False):
     """
     評估程序
     @param detoutput: detect.py函數的結果存放輸出路徑
@@ -277,23 +277,38 @@ def evaluation(detoutput, imageset, annopath, classnames, isnotmerge=True, iscou
 
     # see demo for example
     if isnotmerge:
-        mergebypoly(
-            result_before_merge_path,
-            result_merged_path
-        )
+        if ismulti_cls_nms:
+            mergebypoly(
+                result_before_merge_path,
+                result_merged_path,
+                ismulti_cls_nms=True
+            )
+        else:
+            mergebypoly(
+                result_before_merge_path,
+                result_merged_path
+            )
     print('檢測結果已merge')
     evaluation_trans(
         result_merged_path,
         result_classname_path
     )
     print('檢測結果已按照類別分類')
+
+    if ismulti_cls_nms:
+        multi_classes_nms(result_classname_path)
+        print('檢測分類結果已NMS完成')
+
     image2txt(
         imageset,  # val原图数据集路径
         imageset_name_file_path
               )
     print('校驗數據集名稱文件已生成')
 
-    detpath = str(result_classname_path + '/Task1_{:s}.txt')  # 'r/.../Task1_{:s}.txt'  存放各類別結果文件txt的路徑
+    if ismulti_cls_nms:
+        detpath = str(result_classname_path + '/nms/Task1_{:s}.txt')  # 'r/.../Task1_{:s}.txt'  存放各類別結果文件txt的路徑
+    else:
+        detpath = str(result_classname_path + '/Task1_{:s}.txt')  # 'r/.../Task1_{:s}.txt'  存放各類別結果文件txt的路徑
     annopath = annopath
     imagesetfile = str(imageset_name_file_path +'/imgnamefile.txt')  # 'r/.../imgnamefile.txt'  測試集圖片名稱txt
 

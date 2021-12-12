@@ -5,6 +5,7 @@
 import torch
 import torch.nn as nn
 import math
+from yolox.utils import cal_iou, cal_giou, cal_diou, enclosing_box
 
 class IOUloss(nn.Module):
     def __init__(self, reduction="none", loss_type="iou", alpha=None):
@@ -117,6 +118,98 @@ class IOUloss(nn.Module):
             loss = loss.sum()
 
         return loss
+
+
+class RIOUloss(nn.Module):
+    def __init__(self, reduction="none", loss_type="iou"):
+        super(RIOUloss, self).__init__()
+        self.reduction = reduction
+        self.loss_type = loss_type
+
+    def forward(self, pred, target):
+        # pred = [num, [x, y, w, h]] torch.Size([261, 4])
+        # target = xyxy
+        assert pred.shape[0] == target.shape[0]
+        print(pred.shape)
+        pred = pred.view(-1, 4)
+        target = target.view(-1, 4)
+
+        # print(pred.shape)
+
+        # 左下? torch.Size([261, 2])
+        # tl = torch.max(
+        #     (pred[:, :2] - pred[:, 2:] / 2), (target[:, :2] - target[:, 2:] / 2)
+        # )
+        # # 右上?
+        # br = torch.min(
+        #     (pred[:, :2] + pred[:, 2:] / 2), (target[:, :2] + target[:, 2:] / 2)
+        # )
+
+        # # torch.prod = 張量中所有元素的乘積
+        # # area_p = 預測框的面積
+        # area_p = torch.prod(pred[:, 2:], 1)
+        # # area_g = 目標框的面積
+        # area_g = torch.prod(target[:, 2:], 1)
+
+        # en = (tl < br).type(tl.type()).prod(dim=1)
+        
+        # # overlap
+        # area_i = torch.prod(br - tl, 1) * en
+        
+        # # union
+        # area_u = area_p + area_g - area_i
+
+        # iou = (area_i) / (area_u + 1e-16)  # IoU = (A∩B)/(A∪B)
+        # pred_ctrx = torch.unsqueeze((pred[:, 0] + pred[:, 2]) * 0.5, 1)
+        # pred_ctry = torch.unsqueeze((pred[:, 1] + pred[:, 3]) * 0.5, 1)
+        # pred_w = torch.unsqueeze(pred[:, 2] - pred[:, 0], 1)
+        # pred_h = torch.unsqueeze(pred[:, 3] - pred[:, 1], 1)
+        # pred_angle = torch.unsqueeze(torch.deg2rad(pred_angles.float()), 1)
+        # pred_ = torch.unsqueeze(torch.cat((pred_ctrx, pred_ctry, pred_w, pred_h, pred_angle), 1), 0)
+
+
+        # target_ctrx = torch.unsqueeze((target[:, 0] + target[:, 2]) * 0.5, 1)
+        # target_ctry = torch.unsqueeze((target[:, 1] + target[:, 3]) * 0.5, 1)
+        # target_w = torch.unsqueeze(target[:, 2] - target[:, 0], 1)
+        # target_h = torch.unsqueeze(target[:, 3] - target[:, 1], 1)
+        # target_angle = torch.unsqueeze(torch.deg2rad(target_angles.float()), 1)
+        # target_ = torch.unsqueeze(torch.cat((target_ctrx, target_ctry, target_w, target_h, target_angle), 1), 0)
+
+
+
+        # # gious = bbox_overlaps(pred, target, mode='giou', is_aligned=True, eps=eps)
+        # gious, iou = cal_giou(pred_, target_, "smallest")
+        # loss = 1 - gious
+        # return loss
+        print(pred.shape)
+        print(target.shape)
+        iou = cal_iou(pred, target)
+
+        if self.loss_type == "giou" or self.loss_type == "diou" or self.loss_type == "ciou":
+            c_tl = torch.min(
+                (pred[:, :2] - pred[:, 2:] / 2), (target[:, :2] - target[:, 2:] / 2)
+            )
+            c_br = torch.max(
+                (pred[:, :2] + pred[:, 2:] / 2), (target[:, :2] + target[:, 2:] / 2)
+            )
+
+            area_c = torch.prod(c_br - c_tl, 1)  # convex area
+            if self.alpha:
+                giou = iou - torch.pow((area_c - area_u) / area_c + 1e-16, self.alpha)  # GIoU
+            else:
+                giou = iou - (area_c - area_u) / area_c.clamp(1e-16)  # GIoU = IoU - (C-A∪B)/C
+            
+            loss = 1 - giou.clamp(min=-1.0, max=1.0)
+        else:
+            loss = 1 - iou ** 2
+        
+        if self.reduction == "mean":
+            loss = loss.mean()
+        elif self.reduction == "sum":
+            loss = loss.sum()
+
+        return loss
+
 
 # rotation
 class FocalLoss(nn.Module):

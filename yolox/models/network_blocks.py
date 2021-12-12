@@ -5,7 +5,7 @@
 import torch
 import torch.nn as nn
 from yolox.utils import SMU, SMU1
-from yolox.utils import AdaPool3d, AdaPool2d
+# from yolox.utils import AdaPool3d, AdaPool2d
 
 class SiLU(nn.Module):
     """export-friendly version of nn.SiLU()"""
@@ -27,6 +27,8 @@ def get_activation(name="silu", inplace=True):
         module = SMU(mu=1.0)
     elif name == "smu1":
         module = SMU1()
+    elif name == "gelu":
+        module = nn.GELU(inplace=inplace)
     else:
         raise AttributeError("Unsupported act type: {}".format(name))
     return module

@@ -18,7 +18,7 @@ from yolox.utils import fuse_model, get_model_info, postprocess, vis, postproces
 
 from yolox.utils import xyxy2cxcywh, longsideformat2cvminAreaRect
 
-from yolox.evaluators import evaluation ,mergebypoly, evaluation_trans, draw_DOTA_image
+from yolox.evaluators import evaluation ,mergebypoly, evaluation_trans, draw_DOTA_image, multi_classes_nms
 
 
 import numpy as np
@@ -147,7 +147,7 @@ class Predictor(object):
             outputs = self.model(img)
 
             outputs = postprocess_rotation_head(
-                outputs, self.num_classes, self.num_angles, self.confthre, self.nmsthre
+                outputs, self.num_classes, self.num_angles, self.confthre, self.nmsthre, isnms=False
             )
             logger.info("Infer time: {:.4f}s".format(time.time() - t0))
         return outputs, img_info
@@ -249,7 +249,7 @@ def main(exp, args):
     file_name = os.path.join(exp.output_dir, args.experiment_name)
     os.makedirs(file_name, exist_ok=True)
 
-    res_folder = os.path.join(file_name, "result")
+    res_folder = os.path.join(file_name, "result_riou")
     os.makedirs(res_folder, exist_ok=True)
 
     if args.classes == 'dota10':
@@ -311,7 +311,8 @@ def main(exp, args):
                     annopath=r'/home/aimlusr/dataset/dota10/val/labelTxt/{:s}.txt',
                     classnames=CLASSES,
                     isnotmerge=True,
-                    iscountmAP=True
+                    iscountmAP=True,
+                    ismulti_cls_nms=True
                 )
 
                 with open(os.path.join(res_folder, 'classap.txt'), 'a') as f:
@@ -352,7 +353,8 @@ def main(exp, args):
         # see demo for example
         mergebypoly(
             before_merge,
-            after_merge
+            after_merge,
+            ismulti_cls_nms=True
         )
         logger.info("result merge done.")
 
@@ -361,6 +363,9 @@ def main(exp, args):
             result_classname
         )
         logger.info("result classify done.")
+
+        multi_classes_nms(result_classname)
+        logger.info("檢測分類結果已NMS完成")
 
 
 if __name__ == "__main__":

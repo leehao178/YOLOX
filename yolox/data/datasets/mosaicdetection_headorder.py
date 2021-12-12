@@ -254,14 +254,18 @@ class MosaicHeadOrderDetection(Dataset):
                 continue
             label[:4] = rect_rotated[0][0], rect_rotated[0][1], max(rect_rotated[1]), min(rect_rotated[1])
             
-            # get right angle
-            point1, point2 = distPoints([X0, Y0], [X1, Y1], [X2, Y2])
-            label[5] = checkAngleRange(round(countAngle([point1[0]+5, point1[1]], point1, point2))) # angle range [0~179]
-            
-            # get new order
-            rect = longsideformat2cvminAreaRect(label[0], label[1], label[2], label[3], (label[5] - 179.9))
-            poly = cv2.boxPoints(rect)
-            label[6] = findNewOrder(poly, poly_rotated[0])
+            # if class is storage-tank or roundabout
+            if int(label[4]) == 9 or int(label[4]) == 11:
+                pass
+            else:
+                # get right angle
+                point1, point2 = distPoints([X0, Y0], [X1, Y1], [X2, Y2])
+                label[5] = checkAngleRange(round(countAngle([point1[0]+5, point1[1]], point1, point2))) # angle range [0~179]
+                
+                # get new order
+                rect = longsideformat2cvminAreaRect(label[0], label[1], label[2], label[3], (label[5] - 179.9))
+                poly = cv2.boxPoints(rect)
+                label[6] = findNewOrder(poly, poly_rotated[0])
 
             if isdebug:
                 poly = np.int0(poly)

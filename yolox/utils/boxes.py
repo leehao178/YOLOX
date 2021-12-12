@@ -85,7 +85,7 @@ def postprocess(prediction, num_classes, conf_thre=0.7, nms_thre=0.45, class_agn
     return output
 
 
-def postprocess_rotation(prediction, num_classes, num_angles, conf_thre=0.7, nms_thre=0.45):
+def postprocess_rotation(prediction, num_classes, num_angles, conf_thre=0.7, nms_thre=0.45, isnms=True):
     box_corner = prediction.new(prediction.shape)
     box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
     box_corner[:, :, 1] = prediction[:, :, 1] - prediction[:, :, 3] / 2
@@ -114,13 +114,14 @@ def postprocess_rotation(prediction, num_classes, num_angles, conf_thre=0.7, nms
         # batched_nms 會增加召回率和 mAP  適用於訓練及評估   純nms適用於demo
         # batched_nms：根據每個類別進行過濾，只對同一種類別進行計算期票和閾值過濾。
         # NMS：不區分類別對所有BBOX進行過濾如果有不同類別的BBOX重疊的話會導致被過濾掉並不會分開計算。
-        nms_out_index = torchvision.ops.batched_nms(
-            detections[:, :4],
-            detections[:, 4] * detections[:, 5],
-            detections[:, 6],
-            nms_thre,
-        )
-        detections = detections[nms_out_index]
+        if isnms:
+            nms_out_index = torchvision.ops.batched_nms(
+                detections[:, :4],
+                detections[:, 4] * detections[:, 5],
+                detections[:, 6],
+                nms_thre,
+            )
+            detections = detections[nms_out_index]
 
         if output[i] is None:
             output[i] = detections
@@ -129,7 +130,7 @@ def postprocess_rotation(prediction, num_classes, num_angles, conf_thre=0.7, nms
 
     return output
 
-def postprocess_rotation_head(prediction, num_classes, num_angles, conf_thre=0.7, nms_thre=0.45):
+def postprocess_rotation_head(prediction, num_classes, num_angles, conf_thre=0.7, nms_thre=0.45, isnms=True):
     box_corner = prediction.new(prediction.shape)
     box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
     box_corner[:, :, 1] = prediction[:, :, 1] - prediction[:, :, 3] / 2
@@ -156,14 +157,14 @@ def postprocess_rotation_head(prediction, num_classes, num_angles, conf_thre=0.7
         detections = detections[conf_mask]
         if not detections.size(0):
             continue
-
-        nms_out_index = torchvision.ops.batched_nms(
-            detections[:, :4],
-            detections[:, 4] * detections[:, 5],
-            detections[:, 6],
-            nms_thre,
-        )
-        detections = detections[nms_out_index]
+        if isnms:
+            nms_out_index = torchvision.ops.batched_nms(
+                detections[:, :4],
+                detections[:, 4] * detections[:, 5],
+                detections[:, 6],
+                nms_thre,
+            )
+            detections = detections[nms_out_index]
 
         if output[i] is None:
             output[i] = detections

@@ -141,8 +141,13 @@ class COCOHeadOrderDataset(Dataset):
             cls = self.class_ids.index(obj["category_id"])
             res[ix, 0:4] = obj["clean_bbox"]
             res[ix, 4] = cls
-            res[ix, 5] = obj['angle']
-            res[ix, 6] = obj['order']
+
+            if cls == 9 or cls == 11:
+                res[ix, 5] = 0
+                res[ix, 6] = 0
+            else:
+                res[ix, 5] = obj['angle']
+                res[ix, 6] = obj['order']
         
         r = min(self.img_size[0] / height, self.img_size[1] / width)
         res[:, :4] *= r

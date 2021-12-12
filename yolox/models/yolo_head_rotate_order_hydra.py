@@ -29,7 +29,6 @@ class YOLOXRotateHeadOrderHydraHead(nn.Module):
         head_loss="bce",
         label_type=0,
         label_raduius=6,
-        bboxes_iou_mode="iou",
         width=1.0,
         strides=[8, 16, 32],
         in_channels=[256, 512, 1024],
@@ -52,7 +51,8 @@ class YOLOXRotateHeadOrderHydraHead(nn.Module):
 
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
-        self.ang_convs = nn.ModuleList() # 3 branch
+        self.ang_convs = nn.ModuleList()  # hydra
+        self.had_convs = nn.ModuleList()  # hydra
         self.cls_preds = nn.ModuleList()
         self.ang_preds = nn.ModuleList()  # rotation
         self.head_preds = nn.ModuleList()  # headorder
@@ -130,7 +130,27 @@ class YOLOXRotateHeadOrderHydraHead(nn.Module):
                         ),
                     ]
                 )
-            ) # 3 branch
+            )  # hydra
+            self.had_convs.append(
+                nn.Sequential(
+                    *[
+                        Conv(
+                            in_channels=int(256 * width),
+                            out_channels=int(256 * width),
+                            ksize=3,
+                            stride=1,
+                            act=act,
+                        ),
+                        Conv(
+                            in_channels=int(256 * width),
+                            out_channels=int(256 * width),
+                            ksize=3,
+                            stride=1,
+                            act=act,
+                        ),
+                    ]
+                )
+            )  # hydra
             self.cls_preds.append(
                 nn.Conv2d(
                     in_channels=int(256 * width),
@@ -232,25 +252,29 @@ class YOLOXRotateHeadOrderHydraHead(nn.Module):
         y_shifts = []
         expanded_strides = []
 
-        # 3 branch
-        for k, (cls_conv, reg_conv, ang_conv, stride_this_level, x) in enumerate(
-            zip(self.cls_convs, self.reg_convs, self.ang_convs, self.strides, xin)
+        # hydra
+        for k, (cls_conv, reg_conv, ang_conv, had_conv, stride_this_level, x) in enumerate(
+            zip(self.cls_convs, self.reg_convs, self.ang_convs, self.had_convs, self.strides, xin)
         ):
             x = self.stems[k](x)
             cls_x = x
             reg_x = x
             ang_x = x
+            had_x = x
 
             cls_feat = cls_conv(cls_x)
             cls_output = self.cls_preds[k](cls_feat)
-            head_output = self.head_preds[k](cls_feat)  # headorder
 
             reg_feat = reg_conv(reg_x)
             reg_output = self.reg_preds[k](reg_feat)
             obj_output = self.obj_preds[k](reg_feat)
 
-            ang_feat = ang_conv(ang_x) # 3 branch
+            ang_feat = ang_conv(ang_x)  # hydra
             ang_output = self.ang_preds[k](ang_feat)  # rotation
+            
+            had_feat = had_conv(had_x)  # hydra
+            head_output = self.head_preds[k](had_feat)  # headorder
+            
             if self.training:
                 output = torch.cat([reg_output, obj_output, cls_output, ang_output, head_output], 1)   # rotation headorder
                 output, grid = self.get_output_and_grid(
@@ -614,7 +638,7 @@ class YOLOXRotateHeadOrderHydraHead(nn.Module):
             gt_bboxes_per_image = gt_bboxes_per_image.cpu()
             bboxes_preds_per_image = bboxes_preds_per_image.cpu()
 
-        pair_wise_ious = bboxes_iou(gt_bboxes_per_image, bboxes_preds_per_image, xyxy=False, iou_mode=self.bboxes_iou_mode)
+        pair_wise_ious = bboxes_iou(gt_bboxes_per_image, bboxes_preds_per_image, xyxy=False)
 
         gt_cls_per_image = (
             F.one_hot(gt_classes.to(torch.int64), self.num_classes)

@@ -4,7 +4,7 @@
 
 from .darknet import CSPDarknet, Darknet
 from .swin_transformer import SwinTransformer
-from .losses import IOUloss, FocalLoss
+from .losses import IOUloss, FocalLoss, RIOUloss
 from .yolo_fpn import YOLOFPN
 from .yolo_head import YOLOXHead
 from .yolo_pafpn import YOLOPAFPN
