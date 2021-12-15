@@ -255,7 +255,7 @@ class MosaicHeadOrderDetection(Dataset):
             label[:4] = rect_rotated[0][0], rect_rotated[0][1], max(rect_rotated[1]), min(rect_rotated[1])
             
             # if class is storage-tank or roundabout
-            if int(label[4]) == 9 or int(label[4]) == 11:
+            if int(label[4]) == 9 or int(label[4]) == 11 or int(label[4]) == 16:
                 pass
             else:
                 # get right angle
@@ -322,15 +322,20 @@ class MosaicHeadOrderDetection(Dataset):
                 poly = np.int0(poly)
 
                 
-                # real angle
-                point1, point2 = distPoints([poly[0][0], poly[0][1]], [poly[1][0], poly[1][1]], [poly[2][0], poly[2][1]])
-                test = countAngle([point1[0]+5, point1[1]], point1, point2)
-                # print(test)
-                realangle = round(test)
-                if realangle == 180:
-                    realangle = 0
-                elif realangle > 180:
-                    print('realangle > 180:')          
+                if int(label[4]) == 9 or int(label[4]) == 11 or int(label[4]) == 16:
+                    pass
+                else:
+                    # real angle
+                    point1, point2 = distPoints([poly[0][0], poly[0][1]], [poly[1][0], poly[1][1]], [poly[2][0], poly[2][1]])
+                    test = countAngle([point1[0]+5, point1[1]], point1, point2)
+                    # print(test)
+                    realangle = round(test)
+                    if realangle == 180:
+                        realangle = 0
+                    elif realangle > 180:
+                        print('realangle > 180:')
+
+                    label[5] = realangle      
 
                 flipAngle = 180 - label[5]
                 if flipAngle == 180:
@@ -340,10 +345,9 @@ class MosaicHeadOrderDetection(Dataset):
                 polyFlip = cv2.boxPoints(rectFlip)
                 new_order = findNewOrder(polyFlip, (poly[int(label[6])-3][0], poly[int(label[6])-3][1]))
 
-                polyFlip = np.int0(polyFlip)
+                # polyFlip = np.int0(polyFlip)
                 
                 label[0] = weight - label[0]
-                label[5] = realangle
                 label[6] = new_order
                 if isdebug:
                     rectFinal = longsideformat2cvminAreaRect(label[0], label[1], label[2], label[3], (label[5] - 179.9))
@@ -374,15 +378,21 @@ class MosaicHeadOrderDetection(Dataset):
                 poly[3][1] = height - poly[3][1]
                 poly = np.int0(poly)
 
-                # real angle
-                point1, point2 = distPoints([poly[0][0], poly[0][1]], [poly[1][0], poly[1][1]], [poly[2][0], poly[2][1]])
-                test = countAngle([point1[0]+15, point1[1]], point1, point2)
-                # print(test)
-                realangle = round(test)
-                if realangle == 180:
-                    realangle = 0
-                elif realangle > 180:
-                    print('realangle > 180:')          
+
+                if int(label[4]) == 9 or int(label[4]) == 11 or int(label[4]) == 16:
+                    pass
+                else:
+                    # real angle
+                    point1, point2 = distPoints([poly[0][0], poly[0][1]], [poly[1][0], poly[1][1]], [poly[2][0], poly[2][1]])
+                    test = countAngle([point1[0]+15, point1[1]], point1, point2)
+                    # print(test)
+                    realangle = round(test)
+                    if realangle == 180:
+                        realangle = 0
+                    elif realangle > 180:
+                        print('realangle > 180:')
+
+                    label[5] = realangle 
 
                 flipAngle = 180 - label[5]
                 if flipAngle == 180:
@@ -392,10 +402,9 @@ class MosaicHeadOrderDetection(Dataset):
                 polyFlip = cv2.boxPoints(rectFlip)
                 new_order = findNewOrder(polyFlip, (poly[int(label[6])-3][0], poly[int(label[6])-3][1]))
 
-                polyFlip = np.int0(polyFlip)
+                # polyFlip = np.int0(polyFlip)
 
                 label[1] = height - label[1]
-                label[5] = realangle
                 label[6] = new_order
                 if isdebug:
                     rectFinal = longsideformat2cvminAreaRect(label[0], label[1], label[2], label[3], (label[5] - 179.9))
