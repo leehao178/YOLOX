@@ -10,6 +10,9 @@ import math
 import pdb
 import time
 import cv2
+from yolox.utils.Rotated_IoU.oriented_iou_loss import cal_iou, box2corners_th, enclosing_box
+
+from yolox.utils.Rotated_IoU.box_intersection_2d import oriented_box_intersection_2d
 
 __all__ = [
     "filter_box",
@@ -24,7 +27,87 @@ __all__ = [
     "xyxy2xyxyxyxy",
     "xywh2cxcywh",
     "adjust_box_anns_without_clip",
+    # "cvminAreaRect2longsideformat",
 ]
+
+def box_rotated_iou(boxes1, boxes2):
+    """calculate iou
+
+    Args:
+        box1 (torch.Tensor): (B, N, 5)
+        box2 (torch.Tensor): (B, N, 5)
+    
+    Returns:
+        iou (torch.Tensor): (B, N)
+        corners1 (torch.Tensor): (B, N, 4, 2)
+        corners1 (torch.Tensor): (B, N, 4, 2)
+        U (torch.Tensor): (B, N) area1 + area2 - inter_area
+    """
+    # (N, N, 5)
+    box1_ = boxes1.expand(boxes1.size(1), -1, -1).permute(1,0,2)
+    # (N, N, 5)
+    box2_ = boxes2.expand(boxes2.size(1), -1, -1)
+
+    corners1 = box2corners_th(box1_)
+    corners2 = box2corners_th(box2_)
+
+    # (N, N)
+    inter_area, _ = oriented_box_intersection_2d(corners1, corners2)
+
+    area1 = boxes1[:, :, 2] * boxes1[:, :, 3]
+    area2 = boxes2[:, :, 2] * boxes2[:, :, 3]
+
+    u = area1 + area2 - inter_area
+    iou = inter_area / u
+
+    return iou, corners1, corners2, u
+
+def fast_nms(boxes, scores, giou=False, diou=False, ciou=False, cluster=False, spm=False, NMS_threshold=0.5, enclosing_type="smallest"):
+    '''Fast NMS results
+    Arguments:
+        boxes (Tensor[N, 5])
+        scores (Tensor[N])
+    Returns:
+        Fast NMS results
+    '''
+    # 對框按得分降序排列
+    scores, idx = scores.sort(0, descending=True)
+    boxes = boxes[idx]
+    iou, corners1, corners2, u = box_rotated_iou(boxes.float().unsqueeze(0), boxes.float().unsqueeze(0))
+    if giou:
+        w, h = enclosing_box(corners1, corners2, enclosing_type)
+        area_c =  w*h
+        iou = iou - ( area_c - u )/area_c
+    if diou:
+        w, h = enclosing_box(corners1, corners2, enclosing_type)
+        c2 = w*w + h*h      # (B, N)
+        x_offset = boxes.float().unsqueeze(0)[...,0] - boxes.float().unsqueeze(0)[..., 0]
+        y_offset = boxes.float().unsqueeze(0)[...,1] - boxes.float().unsqueeze(0)[..., 1]
+        d2 = x_offset*x_offset + y_offset*y_offset
+        iou = iou - d2/c2
+    if ciou:
+        pass
+    iou.triu_(diagonal=1)  # 上三角化
+    if cluster:
+        # cluster_nms
+        C = iou
+        for i in range(200):    
+            A=C
+            maxA = A.max(dim=0)[0]   # 列最大值向量
+            E = (maxA < NMS_threshold).float().unsqueeze(1).expand_as(A)   # 對角矩陣E的替代
+            C = iou.mul(E)     # 按元素相乘
+            if A.equal(C)==True:     # 終止條件
+                break
+        if spm:
+            scores = torch.prod(torch.exp(-C**2/0.2),0)*scores  # 懲罰得分
+            keep = scores > NMS_threshold  # 得分阈值筛选 這邊要調
+        else:
+            keep = maxA < NMS_threshold  # 列最大值向量，二值化
+    else:
+        # fast_nms
+        keep = iou.max(dim=0)[0] < NMS_threshold  # 列最大值向量，二值化
+
+    return keep
 
 
 def filter_box(output, scale_range):
@@ -475,6 +558,8 @@ def longsideformat2cvminAreaRect(x_c, y_c, longside, shortside, theta_longside, 
             print('當前θ=%.1f，超出opencv的θ定義範圍[-90, 0)' % theta)
 
     return ((int(x_c), int(y_c)), (int(width), int(height)), theta)
+
+
 
 # def py_cpu_nms_poly_fast(dets_, thresh):
 #     """
