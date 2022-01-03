@@ -20,7 +20,7 @@ import matplotlib.pyplot as plt
 from yolox.utils.iou import polyiou
 from functools import partial
 import pdb
-from .evaluation_utils import mergebypoly, evaluation_trans, image2txt, draw_DOTA_image, multi_classes_nms
+from .evaluation_utils import mergebypoly, evaluation_trans, image2txt, draw_DOTA_image, multi_classes_nms, fast_nms2
 
 def parse_gt(filename):
     """
@@ -413,6 +413,93 @@ def evaluation(detoutput, imageset, annopath, classnames, isnotmerge=True, iscou
 
 
     return classaps, classaps75
+import time
+
+def evaluation2(detoutput, imageset, annopath, classnames, ismulti_cls_nms=True, t0=0):
+    """
+    評估程序
+    @param detoutput: detect.py函數的結果存放輸出路徑
+    @param imageset: # val DOTA原圖數據集圖像路徑
+    @param annopath: 'r/.../{:s}.txt'  原始val測試集的DOTAlabels路徑
+    @param classnames: 測試集中的目標種類
+    """
+    result_before_merge_path = str(detoutput + '/result_txt/result_before_merge')
+    result_merged_path = str(detoutput + '/result_txt/result_merged')
+    result_classname_path = str(detoutput + '/result_txt/result_classname')
+    imageset_name_file_path = str(detoutput + '/result_txt')
+
+    # see demo for example
+    mergebypoly(
+        result_before_merge_path,
+        result_merged_path,
+        ismulti_cls_nms=True
+    )
+    print('檢測結果已merge')
+    evaluation_trans(
+        result_merged_path,
+        result_classname_path
+    )
+    print('檢測結果已按照類別分類')
+    # t0 = time.time()
+    if ismulti_cls_nms:
+        # multi_classes_nms(result_classname_path)
+        fast_nms2(result_classname_path)
+        print('檢測分類結果已NMS完成')
+    # logger.info("Infer time: {:.4f}s".format(time.time() - t0))
+    print("Infer time: {:.4f}s".format(time.time() - t0))
+    image2txt(
+        imageset,  # val原图数据集路径
+        imageset_name_file_path
+              )
+    print('校驗數據集名稱文件已生成')
+
+
+    detpath = str(result_classname_path + '/Task1_{:s}.txt')  # 'r/.../Task1_{:s}.txt'  存放各類別結果文件txt的路徑
+    annopath = annopath
+    imagesetfile = str(imageset_name_file_path +'/imgnamefile.txt')  # 'r/.../imgnamefile.txt'  測試集圖片名稱txt
+
+    # detpath = r'PATH_TO_BE_CONFIGURED/Task1_{:s}.txt'
+    # annopath = r'PATH_TO_BE_CONFIGURED/{:s}.txt' # change the directory to the path of val/labelTxt, if you want to do evaluation on the valset
+    # imagesetfile = r'PATH_TO_BE_CONFIGURED/valset.txt'
+
+    classaps = []
+    map = 0
+    skippedClassCount = 0
+    for classname in classnames:
+        # if iscountmAP == False:
+        #     print('classname:', classname)
+        detfile = detpath.format(classname)
+        if not (os.path.exists(detfile)):
+            skippedClassCount += 1
+            print('This class is not be detected in your dataset: {:s}'.format(classname))
+            continue
+        rec, prec, ap = voc_eval(detpath,
+             annopath,
+             imagesetfile,
+             classname,
+             ovthresh=0.5,
+             use_07_metric=True)
+        map = map + ap
+        #print('rec: ', rec, 'prec: ', prec, 'ap: ', ap)
+        print(ap)
+
+        # classaps.append(str(ap.item()))
+
+        with open(os.path.join(detoutput, '{}_50.txt'.format(classname)), 'w') as f:
+            for i in rec.tolist():
+                f.write('{} '.format(i))
+            f.write('\n')
+            for i in prec.tolist():
+                f.write('{} '.format(i))
+
+        # umcomment to show p-r curve of each category
+        # plt.figure(figsize=(8,4))
+        # plt.xlabel('recall')
+        # plt.ylabel('precision')
+        # plt.plot(rec, prec)
+        # plt.show()
+    map = map/(len(classnames)-skippedClassCount)
+    print(map)
 
 
 if __name__ == '__main__':
