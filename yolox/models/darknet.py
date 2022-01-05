@@ -4,7 +4,7 @@
 
 from torch import nn
 
-from .network_blocks import BaseConv, CSPLayer, DWConv, Focus, ResLayer, SPPBottleneck
+from .network_blocks import BaseConv, CSPLayer, DWConv, Focus, ResLayer, SPPBottleneck, SPPFBottleneck
 
 
 class Darknet(nn.Module):
@@ -154,7 +154,7 @@ class CSPDarknet(nn.Module):
         # dark5
         self.dark5 = nn.Sequential(
             Conv(base_channels * 8, base_channels * 16, 3, 2, act=act),
-            SPPBottleneck(base_channels * 16, base_channels * 16, activation=act, pooling=pooling),
+            SPPBottleneck(base_channels * 16, base_channels * 16, activation=act),
             CSPLayer(
                 base_channels * 16,
                 base_channels * 16,

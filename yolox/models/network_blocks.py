@@ -5,7 +5,6 @@
 import torch
 import torch.nn as nn
 from yolox.utils import SMU, SMU1
-# from yolox.utils import AdaPool3d, AdaPool2d
 
 class SiLU(nn.Module):
     """export-friendly version of nn.SiLU()"""
@@ -14,6 +13,15 @@ class SiLU(nn.Module):
     def forward(x):
         return x * torch.sigmoid(x)
 
+# FReLU https://arxiv.org/abs/2007.11824 -------------------------------------------------------------------------------
+class FReLU(nn.Module):
+    def __init__(self, c1, k=3):  # ch_in, kernel
+        super().__init__()
+        self.conv = nn.Conv2d(c1, c1, k, 1, 1, groups=c1, bias=False)
+        self.bn = nn.BatchNorm2d(c1)
+
+    def forward(self, x):
+        return torch.max(x, self.bn(self.conv(x)))
 
 def get_activation(name="silu", inplace=True):
     if name == "silu":
@@ -29,6 +37,8 @@ def get_activation(name="silu", inplace=True):
         module = SMU1()
     elif name == "gelu":
         module = nn.GELU(inplace=inplace)
+    elif name == "frelu":
+        module = FReLU()
     else:
         raise AttributeError("Unsupported act type: {}".format(name))
     return module
@@ -131,25 +141,17 @@ class SPPBottleneck(nn.Module):
     """Spatial pyramid pooling layer used in YOLOv3-SPP"""
 
     def __init__(
-        self, in_channels, out_channels, kernel_sizes=(5, 9, 13), activation="silu", pooling='maxpool'
+        self, in_channels, out_channels, kernel_sizes=(5, 9, 13), activation="silu"
     ):
         super().__init__()
         hidden_channels = in_channels // 2
         self.conv1 = BaseConv(in_channels, hidden_channels, 1, stride=1, act=activation)
-        if pooling == 'maxpool':
-            self.m = nn.ModuleList(
-                [   
-                    nn.MaxPool2d(kernel_size=ks, stride=1, padding=ks // 2)
-                    for ks in kernel_sizes
-                ]
-            )
-        else:
-            self.m = nn.ModuleList(
-                [   
-                    AdaPool2d(kernel_size=ks, stride=1, beta=(1,1))
-                    for ks in kernel_sizes
-                ]
-            )
+        self.m = nn.ModuleList(
+            [   
+                nn.MaxPool2d(kernel_size=ks, stride=1, padding=ks // 2)
+                for ks in kernel_sizes
+            ]
+        )
         conv2_channels = hidden_channels * (len(kernel_sizes) + 1)
         self.conv2 = BaseConv(conv2_channels, out_channels, 1, stride=1, act=activation)
 
@@ -158,6 +160,24 @@ class SPPBottleneck(nn.Module):
         x = torch.cat([x] + [m(x) for m in self.m], dim=1)
         x = self.conv2(x)
         return x
+
+class SPPFBottleneck(nn.Module):
+    """Spatial Pyramid Pooling Fast layer used in YOLOv3-SPP"""
+
+    def __init__(
+        self, in_channels, out_channels, kernel_sizes=5, activation="silu"
+    ):
+        super().__init__()
+        hidden_channels = in_channels // 2
+        self.conv1 = BaseConv(in_channels, hidden_channels, 1, stride=1, act=activation)
+        self.conv2 = BaseConv(hidden_channels * 4, out_channels, 1, stride=1, act=activation)
+        self.m = nn.MaxPool2d(kernel_size=kernel_sizes, stride=1, padding=kernel_sizes // 2)
+        
+    def forward(self, x):
+        x = self.conv1(x)
+        y1 = self.m(x)
+        y2 = self.m(y1)
+        return self.conv2(torch.cat([x, y1, y2, self.m(y2)], 1))
 
 
 class CSPLayer(nn.Module):

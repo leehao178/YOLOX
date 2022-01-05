@@ -94,7 +94,7 @@ class Exp(MyExp):
         self.nmsthre = 0.1
     
     def get_model(self):
-        from yolox.models import YOLOXHeadOrder, SWIMPAFPN, YOLOXRotateHeadOrderHead
+        from yolox.models import YOLOXHeadOrder, YOLOPAFPN, YOLOXRotateHeadOrderHead
 
         def init_yolo(M):
             for m in M.modules():
@@ -104,7 +104,7 @@ class Exp(MyExp):
 
         if getattr(self, "model", None) is None:
             in_channels = [256, 512, 1024]
-            backbone = SWIMPAFPN(self.depth, self.width, in_channels=in_channels, act=self.act)
+            backbone = YOLOPAFPN(self.depth, self.width, in_channels=in_channels, act=self.act)
             head = YOLOXRotateHeadOrderHead(num_classes=self.num_classes, 
                                             num_angles=self.num_angles, 
                                             iou_loss=self.iou_loss,
