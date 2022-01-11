@@ -53,10 +53,10 @@ class Exp(MyExp):
         self.enable_mixup = False
 
         # --------------- data augment config --------------- #
-        self.enable_flip=True
-        self.flip_prob=1
-        self.enable_rotate=True
-        self.rotate_prob=1
+        self.enable_flip = True
+        self.flip_prob = 1.0
+        self.enable_rotate = True
+        self.rotate_prob = 1.0
         self.degrees = 45
 
         epoch_scale = 1
