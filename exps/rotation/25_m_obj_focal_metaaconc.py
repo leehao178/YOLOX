@@ -20,7 +20,7 @@ class Exp(MyExp):
         self.num_classes = 15
         self.depth = 0.67
         self.width = 0.75
-        self.act = 'silu'
+        self.act = 'metaaconc'
         self.iou_loss = "iou"
         self.obj_loss = "focalloss"
         self.cls_loss = "bce"
@@ -69,8 +69,8 @@ class Exp(MyExp):
         self.no_aug_epochs = 15 * epoch_scale
         self.min_lr_ratio = 0.05
         self.ema = True
-        # self.optimize = 'sgd'
-        self.optimize = 'adamw'
+        self.optimize = 'sgd'
+        #self.optimize = 'adamw'
         self.weight_decay = 5e-4
         self.momentum = 0.9
         # self.momentum = 0.937
