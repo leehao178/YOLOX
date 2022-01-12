@@ -30,14 +30,14 @@ class Exp(MyExp):
         # ---------------- dataloader config ---------------- #
         # set worker to 4 for shorter dataloader init time
         self.data_num_workers = 2
-        self.input_size = (800, 800)
+        self.input_size = (1024, 1024)
         # Actual multiscale ranges: [640-5*32, 640+5*32].
         # To disable multiscale training, set the
         # self.multiscale_range to 0.
         self.multiscale_range = 5
         # You can uncomment this line to specify a multiscale range
         # self.random_size = (14, 26)
-        self.data_dir = "/home/aimlusr/dataset/dota10_fix"
+        self.data_dir = "/home/aimlusr/dataset/dota10_fix_1024"
         self.train_ann = "instances_train2017.json"
         self.val_ann = "instances_val2017.json"
 
@@ -85,7 +85,7 @@ class Exp(MyExp):
         self.num_angles = 180
 
         # -----------------  testing config ------------------ #
-        self.test_size = (800, 800)
+        self.test_size = (1024, 1024)
         self.test_conf = 0.05
         self.nmsthre = 0.1
     
