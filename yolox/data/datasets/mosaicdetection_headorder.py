@@ -303,7 +303,7 @@ class MosaicHeadOrderDetection(Dataset):
             
         
         # fliplr 左右翻轉
-        if random.uniform(0, 1) > 1:
+        if random.uniform(0, 1) > 0.5:
             # print('左右翻轉')
             flip_img = np.fliplr(origin_img.copy())
             for label in origin_labels:
