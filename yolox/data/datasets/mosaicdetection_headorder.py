@@ -14,8 +14,8 @@ from ..data_augment import box_candidates
 from ..data_augment_headorder import random_perspective_with_angles
 from .datasets_wrapper import Dataset
 
-from yolox.utils.utils import drawRotationbox, longsideformat2cvminAreaRect, debugDrawBox
-from yolox.utils.utils import checkAngleRange, findNewOrder, countAngle, distPoints
+from yolox.utils.utils import drawRotationbox, longsideformat2cvminAreaRect, debugDrawBox, cvminAreaRect2longsideformat
+from yolox.utils.utils import checkAngleRange, findNewOrder, countAngle, distPoints, findHeadPoint
 from yolox.utils.boxes import xyxy2cxcywh, cxcywh2xyxy
 import math
 
@@ -139,7 +139,9 @@ class MosaicHeadOrderDetection(Dataset):
                 # np.clip(mosaic_labels[:, 1], 0, 2 * input_h, out=mosaic_labels[:, 1])  #ymin
                 # np.clip(mosaic_labels[:, 2], 0, 2 * input_w, out=mosaic_labels[:, 2])  #xmax
                 # np.clip(mosaic_labels[:, 3], 0, 2 * input_h, out=mosaic_labels[:, 3])  #ymax
-
+            # randomNum = random.randint(0, 1000)
+            
+            # debugDrawBox(mosaic_img.copy(), xyxy2cxcywh(mosaic_labels.copy()), isDraw=True, num='{}_1'.format(randomNum))
 
             # 隨機對圖片進行平移，縮放，裁剪
             mosaic_img, mosaic_labels = random_perspective_with_angles(
@@ -156,20 +158,20 @@ class MosaicHeadOrderDetection(Dataset):
             if len(mosaic_labels) != 0:
                 mosaic_img, mosaic_labels = self.checkLabels(origin_img=mosaic_img, origin_labels=mosaic_labels)
 
-            # debugDrawBox(mosaic_img.copy(), xyxy2cxcywh(mosaic_labels), isDraw=True)
+            # debugDrawBox(mosaic_img.copy(), mosaic_labels, isDraw=True, num='{}_2'.format(randomNum))
 
             # 上下左右翻轉
             if self.enable_flip and not len(mosaic_labels) == 0 and random.random() < self.flip_prob:
                 mosaic_img, mosaic_labels = self.flipup(mosaic_img, mosaic_labels)
             
-            # debugDrawBox(mosaic_img.copy(), mosaic_labels, isDraw=True)
+            # debugDrawBox(mosaic_img.copy(), mosaic_labels, isDraw=True, num='{}_3'.format(randomNum))
 
 
             # 旋轉
             if self.enable_rotate and not len(mosaic_labels) == 0 and random.random() < self.rotate_prob:
-                mosaic_img, mosaic_labels = self.rotate(mosaic_img, mosaic_labels, self.degrees)
+                mosaic_img, mosaic_labels = self.rotate(mosaic_img, mosaic_labels, self.degrees, isdebug=False)
 
-            # debugDrawBox(mosaic_img.copy(), mosaic_labels, isDraw=True)
+            # debugDrawBox(mosaic_img.copy(), mosaic_labels, isDraw=True, num='{}_4'.format(randomNum))
 
             # -----------------------------------------------------------------
             # CopyPaste: https://arxiv.org/abs/2012.07177
@@ -219,13 +221,17 @@ class MosaicHeadOrderDetection(Dataset):
             unrotate = origin_img.copy()
             # source_labels = xyxy2cxcywh(origin_labels.copy())
             source_labels = origin_labels.copy()
-            unrotate = drawRotationbox(img=unrotate, bboxes=source_labels[:, :4], angles=source_labels[:, 5], heads=source_labels[:, 6])
+            unrotate = drawRotationbox(img=unrotate, bboxes=source_labels[:, :4], angles=source_labels[:, 5])
         
         M = cv2.getRotationMatrix2D(center=(a, b), angle=target_angle, scale=scale)
         rotated_img = cv2.warpAffine(origin_img.copy(), M, (height, width))  # 旋轉後的圖像保持大小不變
 
         Pi_angle = -target_angle * math.pi / 180.0  # 弧度制，后面旋转坐标需要用到，注意负号！！！
         
+        if isdebug:
+            step1img = origin_img.copy()
+            step2img = rotated_img.copy()
+
         rotated_labels = []
         # labels = xyxy2cxcywh(origin_labels.copy())
         labels = origin_labels.copy()
@@ -233,7 +239,13 @@ class MosaicHeadOrderDetection(Dataset):
             order = int(label[6])
             rect = longsideformat2cvminAreaRect(label[0], label[1], label[2], label[3], (label[5] - 179.9))
             poly = cv2.boxPoints(rect)
-
+            
+            if isdebug:
+                cv2.circle(step1img, ((int(poly[0][0])), (int(poly[0][1]))), 4, (0, 0, 255), -1)
+                cv2.circle(step1img, ((int(poly[1][0])), (int(poly[1][1]))), 4, (0, 0, 255), -1)
+                cv2.circle(step1img, ((int(poly[2][0])), (int(poly[2][1]))), 4, (0, 0, 255), -1)
+                cv2.circle(step1img, ((int(poly[3][0])), (int(poly[3][1]))), 4, (0, 0, 255), -1)
+            
             # 下面是计算旋转后目标相对旋转过后的图像的位置
             X0 = (poly[order][0] - a) * math.cos(Pi_angle) - (poly[order][1] - b) * math.sin(Pi_angle) + a
             Y0 = (poly[order][0] - a) * math.sin(Pi_angle) + (poly[order][1] - b) * math.cos(Pi_angle) + b
@@ -249,6 +261,13 @@ class MosaicHeadOrderDetection(Dataset):
 
             # get rotated x, y, w, h
             poly_rotated = np.array([(X0, Y0), (X1, Y1), (X2, Y2), (X3, Y3)])
+
+            if isdebug:
+                cv2.circle(step2img, ((int(poly_rotated[0][0])), (int(poly_rotated[0][1]))), 4, (0, 0, 255), -1)
+                cv2.circle(step2img, ((int(poly_rotated[1][0])), (int(poly_rotated[1][1]))), 4, (0, 0, 255), -1)
+                cv2.circle(step2img, ((int(poly_rotated[2][0])), (int(poly_rotated[2][1]))), 4, (0, 0, 255), -1)
+                cv2.circle(step2img, ((int(poly_rotated[3][0])), (int(poly_rotated[3][1]))), 4, (0, 0, 255), -1)
+            
             rect_rotated = cv2.minAreaRect(np.float32(poly_rotated))
             if rect_rotated[0][0] < 0 or rect_rotated[0][0] > width or rect_rotated[0][1] < 0 or rect_rotated[0][1] > height:
                 continue
@@ -269,7 +288,7 @@ class MosaicHeadOrderDetection(Dataset):
 
             if isdebug:
                 poly = np.int0(poly)
-                cv2.circle(rotated_img, (int(poly[int(label[6])][0]), int(poly[int(label[6])][1])), 3, (0, 0, 255), -1)
+                # cv2.circle(rotated_img, (int(poly[int(label[6])][0]), int(poly[int(label[6])][1])), 3, (0, 0, 255), -1)
                 rotated_img = cv2.drawContours(image=rotated_img.copy(), contours=[poly], contourIdx=-1, color=(0, 255, 0))
             
             rotated_labels.append(label)
@@ -282,6 +301,8 @@ class MosaicHeadOrderDetection(Dataset):
         if isdebug:
             randomNum = random.randint(0, 1000)
             cv2.imwrite('/home/danny/Lab/yolox_test/img_test/flip/{}_unrotate_img.jpg'.format(randomNum), unrotate)
+            cv2.imwrite('/home/danny/Lab/yolox_test/img_test/flip/{}_step1img.jpg'.format(randomNum), step1img)
+            cv2.imwrite('/home/danny/Lab/yolox_test/img_test/flip/{}_step2img.jpg'.format(randomNum), step2img)
             cv2.imwrite('/home/danny/Lab/yolox_test/img_test/flip/{}_rotated_img.jpg'.format(randomNum), rotated_img)
             # cv2.imshow('origin_img', unrotate)
             # cv2.imshow('rotated_img', rotated_img)
@@ -296,130 +317,116 @@ class MosaicHeadOrderDetection(Dataset):
 
         flip_labels = []
         if isdebug:
+            randomNum = random.randint(0, 1000)
             unflip = origin_img.copy()
-            source_labels = xyxy2cxcywh(origin_labels.copy())
-            source_labels = origin_labels.copy()
-            unflip = drawRotationbox(img=unflip, bboxes=source_labels[:, :4], angles=source_labels[:, 5], heads=source_labels[:, 6])
-            
-        
-        # fliplr 左右翻轉
-        if random.uniform(0, 1) > 1:
-            # print('左右翻轉')
+        #     source_labels = xyxy2cxcywh(origin_labels.copy())
+        #     source_labels = origin_labels.copy()
+        #     unflip = drawRotationbox(img=unflip, bboxes=source_labels[:, :4], angles=source_labels[:, 5], heads=source_labels[:, 6])
+        isFlipLR = random.uniform(0, 1) > 0.5
+        isDraw = False
+
+        if isFlipLR:
             flip_img = np.fliplr(origin_img.copy())
-            for label in origin_labels:
-                # 未左右翻轉
-                rect = longsideformat2cvminAreaRect(label[0], label[1], label[2], label[3], (label[5] - 179.9))
-                # rect = [(x, y), (w, h), theta]
-
-                poly = cv2.boxPoints(rect)
-                # poly = [(x1,y1),(x2,y2),(x3,y3),(x4,y4)]
-
-                # head point
-                poly[0][0] = weight - poly[0][0]
-                poly[1][0] = weight - poly[1][0]
-                poly[2][0] = weight - poly[2][0]
-                poly[3][0] = weight - poly[3][0]
-                poly = np.int0(poly)
-
-                
-                if int(label[4]) == 9 or int(label[4]) == 11 or int(label[4]) == 16:
-                    pass
-                else:
-                    # real angle
-                    point1, point2 = distPoints([poly[0][0], poly[0][1]], [poly[1][0], poly[1][1]], [poly[2][0], poly[2][1]])
-                    test = countAngle([point1[0]+5, point1[1]], point1, point2)
-                    # print(test)
-                    realangle = round(test)
-                    if realangle == 180:
-                        realangle = 0
-                    elif realangle > 180:
-                        print('realangle > 180:')
-
-                    label[5] = realangle      
-
-                flipAngle = 180 - label[5]
-                if flipAngle == 180:
-                    flipAngle = 0
-
-                rectFlip = longsideformat2cvminAreaRect(weight - label[0], label[1], label[2], label[3], (flipAngle - 179.9))
-                polyFlip = cv2.boxPoints(rectFlip)
-                new_order = findNewOrder(polyFlip, (poly[int(label[6])-3][0], poly[int(label[6])-3][1]))
-
-                # polyFlip = np.int0(polyFlip)
-                
-                label[0] = weight - label[0]
-                label[6] = new_order
-                if isdebug:
-                    rectFinal = longsideformat2cvminAreaRect(label[0], label[1], label[2], label[3], (label[5] - 179.9))
-                    polyFinal = cv2.boxPoints(rectFinal)
-                    polyFinal = np.int0(polyFinal)
-                    flip_img = cv2.drawContours(image=flip_img.copy(), contours=[polyFinal], contourIdx=-1, color=(0, 255, 0))
-                    flip_img = cv2.circle(flip_img, (polyFinal[int(label[6])][0], polyFinal[int(label[6])][1]), 3, (0, 255, 0), -1)
-                    # flip_img = cv2.putText(flip_img, '{}'.format(realangle), (int(polyFlip[new_order][0]), int(polyFlip[new_order][1])), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 1, cv2.LINE_AA)
-
-                flip_labels.append(label)
-        # flipud 上下翻轉
         else:
-            # print('上下翻轉')
             flip_img = np.flipud(origin_img.copy())
-            for label in origin_labels:
-                # 未上下翻轉
-                rect = longsideformat2cvminAreaRect(label[0], label[1], label[2], label[3], (label[5] - 179.9))
-                # rect = [(x, y), (w, h), theta]
-                # print('rect')
-                # print(rect)
-                poly = cv2.boxPoints(rect)
-                # poly = [(x1,y1),(x2,y2),(x3,y3),(x4,y4)]
+        flip_img_ = flip_img.copy()
+        for label in origin_labels:
+            # 未翻轉
+            rect = longsideformat2cvminAreaRect(label[0], label[1], label[2], label[3], (label[5] - 179.9))
+            # rect = [(x, y), (w, h), theta]
+            poly = cv2.boxPoints(rect)
+            # poly = [(x1,y1),(x2,y2),(x3,y3),(x4,y4)]
+            polyShift = np.array([[poly[int(label[6])][0], poly[int(label[6])][1]], 
+                                [poly[int(label[6])-1][0], poly[int(label[6])-1][1]], 
+                                [poly[int(label[6])-2][0], poly[int(label[6])-2][1]], 
+                                [poly[int(label[6])-3][0], poly[int(label[6])-3][1]]])
+            
+            
 
-                # head point
-                poly[0][1] = height - poly[0][1]
-                poly[1][1] = height - poly[1][1]
-                poly[2][1] = height - poly[2][1]
-                poly[3][1] = height - poly[3][1]
-                poly = np.int0(poly)
-
-
-                if int(label[4]) == 9 or int(label[4]) == 11 or int(label[4]) == 16:
-                    pass
+            if isDraw:
+                polyShiftInt = np.int0(polyShift)
+                if float(label[1]) > polyShift[0][1]:
+                    # red color
+                    cv2.circle(unflip, (polyShiftInt[0][0], polyShiftInt[0][1]), 4, (0, 0, 255), -1)
                 else:
-                    # real angle
-                    point1, point2 = distPoints([poly[0][0], poly[0][1]], [poly[1][0], poly[1][1]], [poly[2][0], poly[2][1]])
-                    test = countAngle([point1[0]+15, point1[1]], point1, point2)
-                    # print(test)
-                    realangle = round(test)
-                    if realangle == 180:
-                        realangle = 0
-                    elif realangle > 180:
-                        print('realangle > 180:')
+                    # blue color
+                    cv2.circle(unflip, (polyShiftInt[0][0], polyShiftInt[0][1]), 4, (255, 0, 0), -1)
+                cv2.circle(unflip, (polyShiftInt[1][0], polyShiftInt[1][1]), 1, (0, 255, 0), -1)
+                cv2.circle(unflip, (polyShiftInt[2][0], polyShiftInt[2][1]), 1, (0, 255, 0), -1)
+                cv2.circle(unflip, (polyShiftInt[3][0], polyShiftInt[3][1]), 1, (0, 255, 0), -1)
 
-                    label[5] = realangle 
 
-                flipAngle = 180 - label[5]
-                if flipAngle == 180:
-                    flipAngle = 0
+            # fliplr 左右翻轉
+            if isFlipLR:
+                polyShift[0][0] = weight - polyShift[0][0]
+                polyShift[1][0] = weight - polyShift[1][0]
+                polyShift[2][0] = weight - polyShift[2][0]
+                polyShift[3][0] = weight - polyShift[3][0]
+            else:
+                polyShift[0][1] = height - polyShift[0][1]
+                polyShift[1][1] = height - polyShift[1][1]
+                polyShift[2][1] = height - polyShift[2][1]
+                polyShift[3][1] = height - polyShift[3][1]
 
-                rectFlip = longsideformat2cvminAreaRect(label[0], height - label[1], label[2], label[3], (flipAngle - 179.9))
-                polyFlip = cv2.boxPoints(rectFlip)
-                new_order = findNewOrder(polyFlip, (poly[int(label[6])-3][0], poly[int(label[6])-3][1]))
+            # 校正起點
+            polyShift = np.array([[polyShift[0-1][0], polyShift[0-1][1]], 
+                                [polyShift[1-1][0], polyShift[1-1][1]], 
+                                [polyShift[2-1][0], polyShift[2-1][1]], 
+                                [polyShift[3-1][0], polyShift[3-1][1]]])
+            head = polyShift[0]
+            
+            if isDraw:
+                polyShiftInt = np.int0(polyShift)
+                flip_img = cv2.circle(flip_img.copy(), (polyShiftInt[0][0], polyShiftInt[0][1]), 3, (0, 0, 255), -1)
+                flip_img = cv2.circle(flip_img.copy(), (polyShiftInt[1][0], polyShiftInt[1][1]), 1, (0, 255, 0), -1)
+                flip_img = cv2.circle(flip_img.copy(), (polyShiftInt[2][0], polyShiftInt[2][1]), 2, (0, 255, 0), -1)
+                flip_img = cv2.circle(flip_img.copy(), (polyShiftInt[3][0], polyShiftInt[3][1]), 2, (0, 255, 0), -1)
 
-                # polyFlip = np.int0(polyFlip)
+            rect = cv2.minAreaRect(polyShift)
+            _, _, _, _, theta = cvminAreaRect2longsideformat(x_c=rect[0][0], y_c=rect[0][1], width=rect[1][0], height=rect[1][1], theta=rect[-1])
+            if theta == 180:
+                theta = 0
+            if isFlipLR:
+                rect = longsideformat2cvminAreaRect(weight - label[0], label[1], label[2], label[3], (theta - 179.9))
+            else:
+                rect = longsideformat2cvminAreaRect(label[0], height - label[1], label[2], label[3], (theta - 179.9))
+            # rect = [(x, y), (w, h), theta]
+            poly = cv2.boxPoints(rect)
+            # poly = [(x1,y1),(x2,y2),(x3,y3),(x4,y4)]
+            ans, indexHead = findHeadPoint(headpoint=head, points=poly.tolist())
 
-                label[1] = height - label[1]
-                label[6] = new_order
-                if isdebug:
-                    rectFinal = longsideformat2cvminAreaRect(label[0], label[1], label[2], label[3], (label[5] - 179.9))
-                    polyFinal = cv2.boxPoints(rectFinal)
-                    polyFinal = np.int0(polyFinal)
-                    flip_img = cv2.drawContours(image=flip_img.copy(), contours=[polyFinal], contourIdx=-1, color=(0, 255, 0))
-                    flip_img = cv2.circle(flip_img, (polyFinal[int(label[6])][0], polyFinal[int(label[6])][1]), 3, (0, 255, 0), -1)
 
-                flip_labels.append(label)
+
+
+            if isDraw:
+                polyShiftInt = np.int0(poly)
+                flip_img = cv2.circle(flip_img.copy(), (polyShiftInt[0][0], polyShiftInt[0][1]), 3, (0, 0, 255), -1)
+                flip_img = cv2.circle(flip_img.copy(), (polyShiftInt[1][0], polyShiftInt[1][1]), 1, (0, 255, 0), -1)
+                flip_img = cv2.circle(flip_img.copy(), (polyShiftInt[2][0], polyShiftInt[2][1]), 2, (0, 255, 0), -1)
+                flip_img = cv2.circle(flip_img.copy(), (polyShiftInt[3][0], polyShiftInt[3][1]), 2, (0, 255, 0), -1)
+                flip_img_ = cv2.drawContours(image=flip_img_, contours=[polyShiftInt], contourIdx=-1, color=(0, 255, 0), thickness=1)
+                flip_img_ = cv2.circle(flip_img_, (polyShiftInt[indexHead][0], polyShiftInt[indexHead][1]), 3, (0, 0, 255), -1)
+            
+            label[0] = rect[0][0]
+            label[1] = rect[0][1]
+            label[2] = rect[1][0]
+            label[3] = rect[1][1]
+
+            if int(label[4]) == 9 or int(label[4]) == 11 or int(label[4]) == 16:
+                pass
+            else:
+                label[5] = theta
+                label[6] = indexHead
+
+            flip_labels.append(label)
         
         if isdebug:
-            cv2.imshow('origin_img', unflip)
-            cv2.imshow('leftright', flip_img)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+            # cv2.imwrite('/home/danny/Lab/yolox_test/img_test/{}_mosaic_img.jpg'.format(randomNum), unflip)
+            cv2.imwrite('/home/danny/Lab/yolox_test/img_test/{}_mosaic_img.jpg'.format(randomNum), flip_img_)
+            # cv2.imshow('origin_img', unflip)
+            # cv2.imshow('leftright', flip_img)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
         
         if len(flip_labels) != 0:
             origin_labels = np.array(flip_labels)

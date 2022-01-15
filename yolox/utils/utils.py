@@ -19,7 +19,18 @@ __all__ = ["longsideformat2cvminAreaRect",
            "findNewOrder", 
            "countAngle",
            "distPoints",
-           "debugDrawBox"]
+           "debugDrawBox",
+           "findHeadPoint"]
+
+
+def findHeadPoint(headpoint, points):
+    realheadpoint = []
+    hx, hy = headpoint
+    for i in points:
+        dist = math.hypot(i[0] - hx, i[1] - hy)
+        realheadpoint.append(dist)
+                                                            # 最接近原始起點的點位置
+    return points[realheadpoint.index(min(realheadpoint))] , realheadpoint.index(min(realheadpoint))
 
 def cvminAreaRect2longsideformat(x_c, y_c, width, height, theta):
     '''
@@ -132,7 +143,7 @@ def drawRotationbox(img, bboxes, angles, heads=None):
     
     return img
 
-def debugDrawBox(img, bboxes, isDraw=False):
+def debugDrawBox(img, bboxes, isDraw=False, num='0'):
     if bboxes.shape[1] == 7:
         xyxy_bboxes = cxcywh2xyxy(bboxes)
         for cxcywhcls0h, xyxycls0h in zip(bboxes, xyxy_bboxes):
@@ -159,8 +170,8 @@ def debugDrawBox(img, bboxes, isDraw=False):
         pass
 
     if isDraw:
-        randomNum = random.randint(0, 1000)
-        cv2.imwrite('/home/danny/Lab/yolox_test/img_test/{}_mosaic_img.jpg'.format(randomNum), img)
+        
+        cv2.imwrite('/home/danny/Lab/yolox_test/img_test/{}_mosaic_img.jpg'.format(num), img)
     else:
         cv2.imshow('test', img)
         cv2.waitKey(0)
