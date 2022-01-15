@@ -226,9 +226,10 @@ def angle_smooth_label(angle_label, num_angle_cls=36, label_type=0, raduius=6):
 def checkAngleRange(angle):
     if angle == 180:
         angle = 0
-        print('== 180')
+        # print('== 180')
     elif angle > 180:
-        print('angle > 180:')
+        pass
+        # print('angle > 180:')
     return angle
 
 def findNewOrder(points, target):
