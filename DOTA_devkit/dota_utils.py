@@ -95,6 +95,42 @@ def parse_dota_poly(filename):
             break
     return objects
 
+
+def parse_longsideformat(filename):  # filename=??.txt
+    """
+        parse the longsideformat ground truth in the format:
+        objects[i] : [classid, x_c, y_c, longside, shortside, theta]
+    """
+    objects = []
+    f = []
+    if (sys.version_info >= (3, 5)):
+        fd = open(filename, 'r')
+        f = fd
+    elif (sys.version_info >= 2.7):
+        fd = codecs.open(filename, 'r')
+        f = fd
+    # count = 0
+    while True:
+        line = f.readline()
+        if line:
+            splitlines = line.strip().split(' ')
+            object_struct = {}
+            ### clear the wrong name after check all the data
+            #if (len(splitlines) >= 9) and (splitlines[8] in classname):
+            if (len(splitlines) < 7) or (len(splitlines) > 7):
+                print('labels長度不為6,出現錯誤,與預定形式不符')
+                continue
+            object_struct = [int(splitlines[0]), float(splitlines[1]),
+                             float(splitlines[2]), float(splitlines[3]),
+                             float(splitlines[4]), float(splitlines[5]),
+                             int(splitlines[6])
+                            ]
+            objects.append(object_struct)
+        else:
+            break
+    return objects
+
+
 def parse_dota_poly2(filename):
     """
         parse the dota ground truth in the format:
@@ -120,6 +156,11 @@ def parse_dota_rec(filename):
 ## bounding box transfer for varies format
 
 def dots4ToRec4(poly):
+    """
+    求出poly四點的最小外接水平矩形
+    @param poly: poly[4]  [x,y]
+    @return: xmin,xmax,ymin,ymax
+    """
     xmin, xmax, ymin, ymax = min(poly[0][0], min(poly[1][0], min(poly[2][0], poly[3][0]))), \
                             max(poly[0][0], max(poly[1][0], max(poly[2][0], poly[3][0]))), \
                              min(poly[0][1], min(poly[1][1], min(poly[2][1], poly[3][1]))), \
@@ -257,3 +298,19 @@ def get_best_begin_point(coordinate):
     if force_flag != 0:
         print("choose one direction!")
     return  combinate[force_flag]
+
+
+def dots4ToRecC(poly, img_w, img_h):
+    """
+    求poly四點坐標的最小外接水平矩形,並返回yolo格式的矩形框表現形式xywh_center(歸一化)
+    @param poly: poly – poly[4] [x,y]
+    @param img_w: 對應圖像的width
+    @param img_h: 對應圖像的height
+    @return: x_center,y_center,w,h(均歸一化)
+    """
+    xmin, ymin, xmax, ymax = dots4ToRec4(poly)
+    x = (xmin + xmax)/2
+    y = (ymin + ymax)/2
+    w = xmax - xmin
+    h = ymax - ymin
+    return x/img_w, y/img_h, w/img_w, h/img_h

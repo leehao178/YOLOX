@@ -148,6 +148,7 @@ class splitbase():
         return outpoly
 
     def savepatches(self, resizeimg, objects, subimgname, left, up, right, down):
+        save_right_thing = True
         outdir = os.path.join(self.outlabelpath, subimgname + '.txt')
         mask_poly = []
         imgpoly = shgeo.Polygon([(left, up), (right, up), (right, down),
@@ -162,7 +163,7 @@ class splitbase():
                     continue
                 inter_poly, half_iou = self.calchalf_iou(gtpoly, imgpoly)
 
-                # print('writing...')
+                # 物體完整在圖片中
                 if (half_iou == 1):
                     polyInsub = self.polyorig2sub(left, up, obj['poly'])
                     outline = ' '.join(list(map(str, polyInsub)))
@@ -170,7 +171,7 @@ class splitbase():
                     f_out.write(outline + '\n')
                 elif (half_iou > 0):
                 #elif (half_iou > self.thresh):
-                  ##  print('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
+                    # print('<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<')
                     inter_poly = shgeo.polygon.orient(inter_poly, sign=1)
                     out_poly = list(inter_poly.exterior.coords)[0: -1]
                     if len(out_poly) < 4:
@@ -191,14 +192,27 @@ class splitbase():
                         continue
                     if (self.choosebestpoint):
                         out_poly2 = choose_best_pointorder_fit_another(out_poly2, obj['poly'])
-
+                    if save_right_thing:
+                        # if obj['name'] == 'ground-track-field':
+                        objcenterpoints = [ (obj['poly'][0]+obj['poly'][2]+obj['poly'][4]+obj['poly'][6])/4, (obj['poly'][1]+obj['poly'][3]+obj['poly'][5]+obj['poly'][7])/4 ]
+                        # print(objcenterpoints)
+                        objcenterpoints = self.polyorig2sub(left, up, objcenterpoints)
+                        
+                        if any(n < 0 for n in objcenterpoints):
+                            continue
+                        if any(n > 1024 for n in objcenterpoints):
+                            continue
+                        else:
+                            # print(type(obj['poly']))
+                            out_poly2 = np.array(obj['poly'])
+                        # print('===========================')
                     polyInsub = self.polyorig2sub(left, up, out_poly2)
 
-                    for index, item in enumerate(polyInsub):
-                        if (item <= 1):
-                            polyInsub[index] = 1
-                        elif (item >= self.subsize):
-                            polyInsub[index] = self.subsize
+                    # for index, item in enumerate(polyInsub):
+                    #     if (item <= 1):
+                    #         polyInsub[index] = 1
+                    #     elif (item >= self.subsize):
+                    #         polyInsub[index] = self.subsize
                     outline = ' '.join(list(map(str, polyInsub)))
                     if (half_iou > self.thresh):
                         outline = outline + ' ' + obj['name'] + ' ' + str(obj['difficult'])
@@ -291,11 +305,13 @@ if __name__ == '__main__':
     # elapsed = (time.clock() - start)
     # print("Time used:", elapsed)
 
-    split = splitbase(r'/home/dingjian/data/dota/val',
-                       r'/home/dingjian/data/dota/valsplit',
-                      gap=200,
+    split = splitbase(basepath=r'E:/dota/val',
+                      outpath=r'E:/dota/val_split_0_5',
+                      gap=512,
                       subsize=1024,
-                      num_process=8
+                      thresh=0.7,
+                      padding=True,
+                      num_process=4
                       )
-    split.splitdata(1)
+    split.splitdata(0.5)  # resize rate before cut
 

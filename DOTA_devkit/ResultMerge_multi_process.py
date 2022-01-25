@@ -225,6 +225,12 @@ def mergesingle(dstpath, nms, fullname):
                     f_out.write(outline + '\n')
 
 def mergebase_parallel(srcpath, dstpath, nms):
+    """
+        將源路徑中所有的txt目標信息,經nms後存入目標路徑中的同名txt
+        @param srcpath: 合併前信息保存的txt源路徑
+        @param dstpath: 合併後信息保存的txt目標路徑
+        @param nms: NMS函數
+    """
     pool = Pool(16)
     filelist = util.GetFileFromThisRootDir(srcpath)
 
@@ -250,8 +256,8 @@ def mergebyrec(srcpath, dstpath):
               py_cpu_nms)
 def mergebypoly(srcpath, dstpath):
     """
-    srcpath: result files before merge and nms
-    dstpath: result files after merge and nms
+    srcpath: result files before merge and nms的信息格式為:[P0770__1__0___0 confidence poly]
+    dstpath: result files after merge and nms保存的txt信息格式為:[P0770 confidence poly]
     """
     # srcpath = r'/home/dingjian/evaluation_task1/result/faster-rcnn-59/comp4_test_results'
     # dstpath = r'/home/dingjian/evaluation_task1/result/faster-rcnn-59/testtime'

@@ -63,6 +63,8 @@ class splitbase():
         for name in imagenames:
             self.SplitSingle(name, rate, self.ext)
 if __name__ == '__main__':
-    split = splitbase(r'example/images',
-                      r'example/imagesSplit')
+    split = splitbase(r'E:/dota/test/images',
+                      r'E:/dota/test_split',
+                      gap=512,
+                      subsize=1024,)
     split.splitdata(1)

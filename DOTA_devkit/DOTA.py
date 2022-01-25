@@ -37,8 +37,8 @@ class DOTA:
 
     def getImgIds(self, catNms=[]):
         """
-        :param catNms: category names
-        :return: all the image ids contain the categories
+        :param catNms: category names 類名 eg:catNms=['ships']
+        :return: all the image ids contain the categories 所有包含該類名的圖片id eg:['P0706', 'P
         """
         catNms = catNms if _isArrayLike(catNms) else [catNms]
         if len(catNms) == 0:
@@ -66,10 +66,10 @@ class DOTA:
         return outobjects
     def showAnns(self, objects, imgId, range):
         """
-        :param catNms: category names
-        :param objects: objects to show
-        :param imgId: img to show
-        :param range: display range in the img
+        :param catNms: category names 類名
+        :param objects: objects to show  即labels信息
+        :param imgId: img to show 待顯示的圖片id
+        :param range: display range in the img 圖片的顯示範圍
         :return:
         """
         img = self.loadImgs(imgId)[0]
@@ -98,8 +98,8 @@ class DOTA:
         ax.add_collection(p)
     def loadImgs(self, imgids=[]):
         """
-        :param imgids: integer ids specifying img
-        :return: loaded img objects
+        :param imgids: integer ids specifying img 待加載的圖片名 eg:imgids=['P0706','P0770']
+        :return: loaded img objects 加載的圖片張量數組 imgs=[...,...]
         """
         print('isarralike:', _isArrayLike(imgids))
         imgids = imgids if _isArrayLike(imgids) else [imgids]
@@ -112,10 +112,22 @@ class DOTA:
             imgs.append(img)
         return imgs
 
-# if __name__ == '__main__':
-#     examplesplit = DOTA('examplesplit')
-#     imgids = examplesplit.getImgIds(catNms=['plane'])
-#     img = examplesplit.loadImgs(imgids)
-#     for imgid in imgids:
-#         anns = examplesplit.loadAnns(imgId=imgid)
-#         examplesplit.showAnns(anns, imgid, 2)
+if __name__ == '__main__':
+    examplesplit = DOTA(r'E:/dota/train_split')  # (r'./example')
+    imgids = examplesplit.getImgIds(catNms=['small-vehicle'])  # 獲取包含該類名的所有圖片id eg:['P1088']
+    img = examplesplit.loadImgs(imgids)  # 獲取對應id圖片所對應的small-vehicle張量數組
+    for imgid in imgids:
+        # imgid = 'P0003'  #圖片名稱
+        anns = examplesplit.loadAnns(imgId=imgid)  # 加載對應id圖片的labels相關信息
+        '''
+        anns =
+        [{'name': 'ship', 
+          'difficult': '1', 
+          'poly': [(1054.0, 1028.0), (1063.0, 1011.0), (1111.0, 1040.0), (1112.0, 1062.0)], 
+          'area': 1159.5
+          },
+          ...
+        ]
+        '''
+        examplesplit.showAnns(anns, imgid, 2)  # 將labels信息顯示在對應id的圖片上
+        plt.show()

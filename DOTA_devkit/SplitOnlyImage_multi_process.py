@@ -98,7 +98,11 @@ class splitbase():
         self.__dict__.update(state)
 
 if __name__ == '__main__':
-    split = splitbase(r'/home/dingjian/data/dota/val/images',
-                      r'/home/dingjian/data/dota/valsplit',
-                      num_process=32)
-    split.splitdata(1)
+    split = splitbase(srcpath=r'E:/dota/test/images',
+                      dstpath=r'E:/dota/test_split_0.5',
+                      gap=512,
+                      subsize=1024,
+                      ext='.png',
+                      padding=True,
+                      num_process=8)
+    split.splitdata(0.5)

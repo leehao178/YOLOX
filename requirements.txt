@@ -16,3 +16,8 @@ tensorboard
 onnx==1.8.1
 onnxruntime==1.8.0
 onnx-simplifier==0.3.5
+
+# DOTA_devkit
+numpy==1.19.1
+pillow==7.2.0
+opencv-python==4.1.2.30
