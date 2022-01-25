@@ -1,7 +1,7 @@
 # TODO: Update with exact module version
 numpy
-torch>=1.7
-opencv_python
+# torch>=1.7
+opencv_python==4.1.2.30
 loguru
 scikit-image
 tqdm
@@ -18,6 +18,5 @@ onnxruntime==1.8.0
 onnx-simplifier==0.3.5
 
 # DOTA_devkit
-numpy==1.19.1
-pillow==7.2.0
-opencv-python==4.1.2.30
+# numpy==1.19.1
+# pillow==7.2.0
