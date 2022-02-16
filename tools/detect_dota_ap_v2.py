@@ -22,6 +22,7 @@ from yolox.evaluators import evaluation ,mergebypoly, evaluation_trans, draw_DOT
 
 
 import numpy as np
+from pathlib import Path
 
 IMAGE_EXT = [".jpg", ".jpeg", ".webp", ".bmp", ".png"]
 
@@ -307,8 +308,8 @@ def main(exp, args):
                 image_demo(predictor, args.path, before_merge)
                 classap, classap75 = evaluation(
                     detoutput=detection,
-                    imageset=r'/home/aimlusr/dataset/dota10/val/images', # 原始未裁切圖片
-                    annopath=r'/home/aimlusr/dataset/dota10/val/labelTxt/{:s}.txt',
+                    imageset=os.path.join(Path.home(), 'dataset/dota10/val/images'), # 原始未裁切圖片
+                    annopath=os.path.join(Path.home(), 'dataset/dota10/val/labelTxt/{:s}.txt'),
                     classnames=CLASSES,
                     isnotmerge=True,
                     iscountmAP=True,
@@ -372,9 +373,9 @@ if __name__ == "__main__":
     args = make_parser().parse_args()
 
     if args.mode == 'test':
-        args.path = '/home/aimlusr/dataset/dota10/test_split'
+        args.path = os.path.join(Path.home(), 'dataset/dota10_fix/test_split')
     elif args.mode == 'val':
-        args.path = '/home/aimlusr/dataset/dota10/val_split/images'
+        args.path = os.path.join(Path.home(), 'dataset/dota10_fix/val_split/images')
 
     exp = get_exp(args.exp_file, args.name)
 
