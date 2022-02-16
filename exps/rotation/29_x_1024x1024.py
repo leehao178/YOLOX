@@ -54,9 +54,9 @@ class Exp(MyExp):
 
         # --------------- data augment config --------------- #
         self.enable_flip  = True
-        self.flip_prob = 1.0
+        self.flip_prob = 0.5
         self.enable_rotate = True
-        self.rotate_prob = 1.0
+        self.rotate_prob = 0.5
         self.degrees = 45
 
         epoch_scale = 1
