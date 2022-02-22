@@ -8,8 +8,10 @@ import torch.nn as nn
 from .darknet import CSPDarknet
 from .network_blocks import BaseConv, CSPLayer, DWConv
 
+from .swin_transformer import SwinTransformer
 
-class YOLOPAFPN(nn.Module):
+
+class SWIMPAFPN(nn.Module):
     """
     YOLOv3 model. Darknet 53 is the default backbone of this model.
     """
@@ -22,10 +24,10 @@ class YOLOPAFPN(nn.Module):
         in_channels=[256, 512, 1024],
         depthwise=False,
         act="silu",
-        pooling="maxpool"
     ):
         super().__init__()
-        self.backbone = CSPDarknet(depth, width, depthwise=depthwise, act=act, pooling=pooling)
+        self.backbone = SwinTransformer()
+        # self.backbone = CSPDarknet(depth, width, depthwise=depthwise, act=act)
         self.in_features = in_features
         self.in_channels = in_channels
         Conv = DWConv if depthwise else BaseConv
@@ -92,8 +94,17 @@ class YOLOPAFPN(nn.Module):
 
         #  backbone
         out_features = self.backbone(input)
-        features = [out_features[f] for f in self.in_features]
-        [x2, x1, x0] = features
+        # features = [out_features[f] for f in self.in_features]
+        x2 = out_features[0]
+        x1 = out_features[1]
+        x0 = out_features[2]
+        # print('=========================')
+        # print(x2.shape)
+        # print(x1.shape)
+        # print(x0.shape)
+
+        # "dark3", "dark4", "dark5"
+        # [x2,     x1,      x0] = features
 
         fpn_out0 = self.lateral_conv0(x0)  # 1024->512/32
         f_out0 = self.upsample(fpn_out0)  # 512/16
@@ -112,6 +123,14 @@ class YOLOPAFPN(nn.Module):
         p_out0 = self.bu_conv1(pan_out1)  # 512->512/32
         p_out0 = torch.cat([p_out0, fpn_out0], 1)  # 512->1024/32
         pan_out0 = self.C3_n4(p_out0)  # 1024->1024/32
+
+        # print(f_out0.shape)
+        # print(f_out1.shape)
+
+        # print(pan_out2.shape)
+        # print(pan_out1.shape)
+        # print(pan_out0.shape)
+
 
         outputs = (pan_out2, pan_out1, pan_out0)
         return outputs

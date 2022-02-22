@@ -4,7 +4,7 @@
 
 from torch import nn
 
-from .network_blocks import BaseConv, CSPLayer, DWConv, Focus, ResLayer, SPPBottleneck
+from .network_blocks import BaseConv, CSPLayer, DWConv, Focus, ResLayer, SPPBottleneck, SPPFBottleneck
 
 
 class Darknet(nn.Module):
@@ -102,6 +102,7 @@ class CSPDarknet(nn.Module):
         out_features=("dark3", "dark4", "dark5"),
         depthwise=False,
         act="silu",
+        pooling="maxpool"
     ):
         super().__init__()
         assert out_features, "please provide output features of Darknet"

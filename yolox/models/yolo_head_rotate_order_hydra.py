@@ -9,16 +9,26 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from yolox.utils import bboxes_iou
+from yolox.utils import bboxes_iou, angle_smooth_label  # rotation
 
-from .losses import IOUloss
+from .losses import IOUloss, FocalLoss  # rotation
 from .network_blocks import BaseConv, DWConv
 
+import numpy as np  # rotation
 
-class YOLOXHead(nn.Module):
+
+class YOLOXRotateHeadOrderHydraHead(nn.Module):
     def __init__(
         self,
         num_classes,
+        num_angles,
+        iou_loss="iou",
+        cls_loss="bce",
+        obj_loss="bce",
+        ang_loss="focalloss",
+        head_loss="bce",
+        label_type=0,
+        label_raduius=6,
         width=1.0,
         strides=[8, 16, 32],
         in_channels=[256, 512, 1024],
@@ -34,11 +44,18 @@ class YOLOXHead(nn.Module):
 
         self.n_anchors = 1
         self.num_classes = num_classes
+        self.num_angles = num_angles  # rotation
+        self.label_type = label_type  # rotation
+        self.label_raduius = label_raduius  # rotation
         self.decode_in_inference = True  # for deploy, set to False
 
         self.cls_convs = nn.ModuleList()
         self.reg_convs = nn.ModuleList()
+        self.ang_convs = nn.ModuleList()  # hydra
+        self.had_convs = nn.ModuleList()  # hydra
         self.cls_preds = nn.ModuleList()
+        self.ang_preds = nn.ModuleList()  # rotation
+        self.head_preds = nn.ModuleList()  # headorder
         self.reg_preds = nn.ModuleList()
         self.obj_preds = nn.ModuleList()
         self.stems = nn.ModuleList()
@@ -94,6 +111,46 @@ class YOLOXHead(nn.Module):
                     ]
                 )
             )
+            self.ang_convs.append(
+                nn.Sequential(
+                    *[
+                        Conv(
+                            in_channels=int(256 * width),
+                            out_channels=int(256 * width),
+                            ksize=3,
+                            stride=1,
+                            act=act,
+                        ),
+                        Conv(
+                            in_channels=int(256 * width),
+                            out_channels=int(256 * width),
+                            ksize=3,
+                            stride=1,
+                            act=act,
+                        ),
+                    ]
+                )
+            )  # hydra
+            self.had_convs.append(
+                nn.Sequential(
+                    *[
+                        Conv(
+                            in_channels=int(256 * width),
+                            out_channels=int(256 * width),
+                            ksize=3,
+                            stride=1,
+                            act=act,
+                        ),
+                        Conv(
+                            in_channels=int(256 * width),
+                            out_channels=int(256 * width),
+                            ksize=3,
+                            stride=1,
+                            act=act,
+                        ),
+                    ]
+                )
+            )  # hydra
             self.cls_preds.append(
                 nn.Conv2d(
                     in_channels=int(256 * width),
@@ -103,6 +160,24 @@ class YOLOXHead(nn.Module):
                     padding=0,
                 )
             )
+            self.ang_preds.append(
+                nn.Conv2d(
+                    in_channels=int(256 * width),
+                    out_channels=self.n_anchors * self.num_angles,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
+                )
+            )  # rotation
+            self.head_preds.append(
+                nn.Conv2d(
+                    in_channels=int(256 * width),
+                    out_channels=self.n_anchors * 4,
+                    kernel_size=1,
+                    stride=1,
+                    padding=0,
+                )
+            )  # headorder
             self.reg_preds.append(
                 nn.Conv2d(
                     in_channels=int(256 * width),
@@ -124,13 +199,43 @@ class YOLOXHead(nn.Module):
 
         self.use_l1 = False
         self.l1_loss = nn.L1Loss(reduction="none")
-        self.bcewithlog_loss = nn.BCEWithLogitsLoss(reduction="none")
-        self.iou_loss = IOUloss(reduction="none")
+        self.iou_loss = IOUloss(reduction="none", loss_type=iou_loss)
         self.strides = strides
         self.grids = [torch.zeros(1)] * len(in_channels)
+        
+        if obj_loss == "bce":
+            self.obj_loss = nn.BCEWithLogitsLoss(reduction="none")
+        elif obj_loss == "focalloss":
+            self.obj_loss = FocalLoss(nn.BCEWithLogitsLoss(reduction="none"))
+        
+        if ang_loss == "focalloss":
+            self.ang_loss = FocalLoss(nn.BCEWithLogitsLoss(reduction="none"))
+        elif ang_loss == "bce":
+            self.ang_loss = nn.BCEWithLogitsLoss(reduction="none")
+        
+        if head_loss == "bce":
+            self.head_loss = nn.BCEWithLogitsLoss(reduction="none")
+        elif head_loss == "focalloss":
+            self.head_loss = FocalLoss(nn.BCEWithLogitsLoss(reduction="none"))
+        
+        if cls_loss == "bce":
+            self.cls_loss = nn.BCEWithLogitsLoss(reduction="none")
+        elif cls_loss == "focalloss":
+            self.cls_loss = FocalLoss(nn.BCEWithLogitsLoss(reduction="none"))
+        
 
     def initialize_biases(self, prior_prob):
         for conv in self.cls_preds:
+            b = conv.bias.view(self.n_anchors, -1)
+            b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
+            conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
+        
+        for conv in self.ang_preds:  # rotation
+            b = conv.bias.view(self.n_anchors, -1)
+            b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
+            conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
+
+        for conv in self.head_preds:  # headorder
             b = conv.bias.view(self.n_anchors, -1)
             b.data.fill_(-math.log((1 - prior_prob) / prior_prob))
             conv.bias = torch.nn.Parameter(b.view(-1), requires_grad=True)
@@ -147,12 +252,15 @@ class YOLOXHead(nn.Module):
         y_shifts = []
         expanded_strides = []
 
-        for k, (cls_conv, reg_conv, stride_this_level, x) in enumerate(
-            zip(self.cls_convs, self.reg_convs, self.strides, xin)
+        # hydra
+        for k, (cls_conv, reg_conv, ang_conv, had_conv, stride_this_level, x) in enumerate(
+            zip(self.cls_convs, self.reg_convs, self.ang_convs, self.had_convs, self.strides, xin)
         ):
             x = self.stems[k](x)
             cls_x = x
             reg_x = x
+            ang_x = x
+            had_x = x
 
             cls_feat = cls_conv(cls_x)
             cls_output = self.cls_preds[k](cls_feat)
@@ -161,8 +269,14 @@ class YOLOXHead(nn.Module):
             reg_output = self.reg_preds[k](reg_feat)
             obj_output = self.obj_preds[k](reg_feat)
 
+            ang_feat = ang_conv(ang_x)  # hydra
+            ang_output = self.ang_preds[k](ang_feat)  # rotation
+            
+            had_feat = had_conv(had_x)  # hydra
+            head_output = self.head_preds[k](had_feat)  # headorder
+            
             if self.training:
-                output = torch.cat([reg_output, obj_output, cls_output], 1)
+                output = torch.cat([reg_output, obj_output, cls_output, ang_output, head_output], 1)   # rotation headorder
                 output, grid = self.get_output_and_grid(
                     output, k, stride_this_level, xin[0].type()
                 )
@@ -186,7 +300,7 @@ class YOLOXHead(nn.Module):
 
             else:
                 output = torch.cat(
-                    [reg_output, obj_output.sigmoid(), cls_output.sigmoid()], 1
+                    [reg_output, obj_output.sigmoid(), cls_output.sigmoid(), ang_output.sigmoid(), head_output.sigmoid()], 1   # rotation headorder
                 )
 
             outputs.append(output)
@@ -217,7 +331,7 @@ class YOLOXHead(nn.Module):
         grid = self.grids[k]
 
         batch_size = output.shape[0]
-        n_ch = 5 + self.num_classes
+        n_ch = 5 + self.num_classes + self.num_angles + 4   # rotation headorder
         hsize, wsize = output.shape[-2:]
         if grid.shape[2:4] != output.shape[2:4]:
             yv, xv = torch.meshgrid([torch.arange(hsize), torch.arange(wsize)])
@@ -261,11 +375,14 @@ class YOLOXHead(nn.Module):
         origin_preds,
         dtype,
     ):
+        device = labels.device  # rotation
         bbox_preds = outputs[:, :, :4]  # [batch, n_anchors_all, 4]
         obj_preds = outputs[:, :, 4].unsqueeze(-1)  # [batch, n_anchors_all, 1]
-        cls_preds = outputs[:, :, 5:]  # [batch, n_anchors_all, n_cls]
+        cls_preds = outputs[:, :, 5: 5+self.num_classes]  # [batch, n_anchors_all, n_cls]  # rotation
+        ang_preds = outputs[:, :, 5+self.num_classes: 5+self.num_classes+self.num_angles]  # [batch, n_anchors_all, n_ang]  # rotation
+        head_preds = outputs[:, :, 5+self.num_classes+self.num_angles:]  # [batch, n_anchors_all, n_head]  # headorder
 
-        # calculate targets
+        # calculate targets 
         nlabel = (labels.sum(dim=2) > 0).sum(dim=1)  # number of objects
 
         total_num_anchors = outputs.shape[1]
@@ -276,6 +393,8 @@ class YOLOXHead(nn.Module):
             origin_preds = torch.cat(origin_preds, 1)
 
         cls_targets = []
+        ang_targets = []  # rotation
+        head_targets = []  # headorder
         reg_targets = []
         l1_targets = []
         obj_targets = []
@@ -289,6 +408,8 @@ class YOLOXHead(nn.Module):
             num_gts += num_gt
             if num_gt == 0:
                 cls_target = outputs.new_zeros((0, self.num_classes))
+                ang_target = outputs.new_zeros((0, self.num_angles))  # rotation
+                head_target = outputs.new_zeros((0, 4))  # headorder
                 reg_target = outputs.new_zeros((0, 4))
                 l1_target = outputs.new_zeros((0, 4))
                 obj_target = outputs.new_zeros((total_num_anchors, 1))
@@ -296,11 +417,15 @@ class YOLOXHead(nn.Module):
             else:
                 gt_bboxes_per_image = labels[batch_idx, :num_gt, 1:5]
                 gt_classes = labels[batch_idx, :num_gt, 0]
+                gt_angles = labels[batch_idx, :num_gt, 5]  # rotation
+                gt_heads = labels[batch_idx, :num_gt, 6]  # headorder
                 bboxes_preds_per_image = bbox_preds[batch_idx]
 
                 try:
                     (
                         gt_matched_classes,
+                        gt_matched_angles,  # rotation
+                        gt_matched_heads,  # headorder
                         fg_mask,
                         pred_ious_this_matching,
                         matched_gt_inds,
@@ -311,11 +436,15 @@ class YOLOXHead(nn.Module):
                         total_num_anchors,
                         gt_bboxes_per_image,
                         gt_classes,
+                        gt_angles,  # rotation
+                        gt_heads,  # headorder
                         bboxes_preds_per_image,
                         expanded_strides,
                         x_shifts,
                         y_shifts,
                         cls_preds,
+                        ang_preds,  # rotation
+                        head_preds,  # headorder
                         bbox_preds,
                         obj_preds,
                         labels,
@@ -330,6 +459,8 @@ class YOLOXHead(nn.Module):
                     torch.cuda.empty_cache()
                     (
                         gt_matched_classes,
+                        gt_matched_angles,  # rotation
+                        gt_matched_heads,  # headorder
                         fg_mask,
                         pred_ious_this_matching,
                         matched_gt_inds,
@@ -340,11 +471,15 @@ class YOLOXHead(nn.Module):
                         total_num_anchors,
                         gt_bboxes_per_image,
                         gt_classes,
+                        gt_angles,  # rotation
+                        gt_heads,  # headorder
                         bboxes_preds_per_image,
                         expanded_strides,
                         x_shifts,
                         y_shifts,
                         cls_preds,
+                        ang_preds,  # rotation
+                        head_preds,  # headorder
                         bbox_preds,
                         obj_preds,
                         labels,
@@ -358,6 +493,21 @@ class YOLOXHead(nn.Module):
                 cls_target = F.one_hot(
                     gt_matched_classes.to(torch.int64), self.num_classes
                 ) * pred_ious_this_matching.unsqueeze(-1)
+                ang_target = torch.from_numpy(angle_smooth_label(angle_label=gt_matched_angles.to(torch.int64).cpu().numpy(),
+                                                                    num_angle_cls=self.num_angles,
+                                                                    label_type=self.label_type,
+                                                                    raduius=self.label_raduius)).to(device=device)  # rotation
+                # gt_ang_per_image = angular_targets.unsqueeze(1).repeat(1, num_in_boxes_anchor, 1)
+                # import matplotlib.pyplot as plt
+                # for index, value in enumerate(angular_targets):
+                #     x = np.array(range(0, 180, 1))
+                #     plt.plot(x, value, "r-", linewidth=1)
+                #     plt.grid(True)
+                #     plt.savefig('loss_img/{}.png'.format(gt_angles.cpu().int().numpy()[index]))
+                #     plt.clf()
+                head_target = F.one_hot(
+                    gt_matched_heads.to(torch.int64), 4
+                ) * pred_ious_this_matching.unsqueeze(-1)  # headorder
                 obj_target = fg_mask.unsqueeze(-1)
                 reg_target = gt_bboxes_per_image[matched_gt_inds]
                 if self.use_l1:
@@ -368,8 +518,10 @@ class YOLOXHead(nn.Module):
                         x_shifts=x_shifts[0][fg_mask],
                         y_shifts=y_shifts[0][fg_mask],
                     )
-
+            
             cls_targets.append(cls_target)
+            ang_targets.append(ang_target)  # rotation
+            head_targets.append(head_target)  # headorder
             reg_targets.append(reg_target)
             obj_targets.append(obj_target.to(dtype))
             fg_masks.append(fg_mask)
@@ -377,6 +529,8 @@ class YOLOXHead(nn.Module):
                 l1_targets.append(l1_target)
 
         cls_targets = torch.cat(cls_targets, 0)
+        ang_targets = torch.cat(ang_targets, 0)  # rotation
+        head_targets = torch.cat(head_targets, 0)  # headorder
         reg_targets = torch.cat(reg_targets, 0)
         obj_targets = torch.cat(obj_targets, 0)
         fg_masks = torch.cat(fg_masks, 0)
@@ -388,13 +542,23 @@ class YOLOXHead(nn.Module):
             self.iou_loss(bbox_preds.view(-1, 4)[fg_masks], reg_targets)
         ).sum() / num_fg
         loss_obj = (
-            self.bcewithlog_loss(obj_preds.view(-1, 1), obj_targets)
+            self.obj_loss(obj_preds.view(-1, 1), obj_targets)
         ).sum() / num_fg
         loss_cls = (
-            self.bcewithlog_loss(
+            self.cls_loss(
                 cls_preds.view(-1, self.num_classes)[fg_masks], cls_targets
             )
         ).sum() / num_fg
+        loss_ang = (
+            self.ang_loss(
+                ang_preds.view(-1, self.num_angles)[fg_masks], ang_targets
+            )
+        ).sum() / num_fg  # rotation
+        loss_head = (
+            self.head_loss(
+                head_preds.view(-1, 4)[fg_masks], head_targets
+            )
+        ).sum() / num_fg  # headorder
         if self.use_l1:
             loss_l1 = (
                 self.l1_loss(origin_preds.view(-1, 4)[fg_masks], l1_targets)
@@ -403,13 +567,15 @@ class YOLOXHead(nn.Module):
             loss_l1 = 0.0
 
         reg_weight = 5.0
-        loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_l1
+        loss = reg_weight * loss_iou + loss_obj + loss_cls + loss_ang + loss_head + loss_l1  # rotation headorder
 
         return (
             loss,
             reg_weight * loss_iou,
             loss_obj,
             loss_cls,
+            loss_ang,  # rotation
+            loss_head,  # headorder
             loss_l1,
             num_fg / max(num_gts, 1),
         )
@@ -429,11 +595,15 @@ class YOLOXHead(nn.Module):
         total_num_anchors,
         gt_bboxes_per_image,
         gt_classes,
+        gt_angles,  # rotation
+        gt_heads,  # headorder
         bboxes_preds_per_image,
         expanded_strides,
         x_shifts,
         y_shifts,
         cls_preds,
+        ang_preds,  # rotation
+        head_preds,  # headorder
         bbox_preds,
         obj_preds,
         labels,
@@ -468,7 +638,7 @@ class YOLOXHead(nn.Module):
             gt_bboxes_per_image = gt_bboxes_per_image.cpu()
             bboxes_preds_per_image = bboxes_preds_per_image.cpu()
 
-        pair_wise_ious = bboxes_iou(gt_bboxes_per_image, bboxes_preds_per_image, False)
+        pair_wise_ious = bboxes_iou(gt_bboxes_per_image, bboxes_preds_per_image, xyxy=False)
 
         gt_cls_per_image = (
             F.one_hot(gt_classes.to(torch.int64), self.num_classes)
@@ -513,6 +683,8 @@ class YOLOXHead(nn.Module):
 
         return (
             gt_matched_classes,
+            gt_angles[matched_gt_inds],  # rotation
+            gt_heads[matched_gt_inds],  # headorder
             fg_mask,
             pred_ious_this_matching,
             matched_gt_inds,

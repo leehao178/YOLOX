@@ -65,6 +65,8 @@ class Exp(BaseExp):
         self.eval_interval = 10
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
+        self.save_ckpt_interval = 30
+
         # -----------------  testing config ------------------ #
         self.test_size = (640, 640)
         self.test_conf = 0.01
@@ -192,8 +194,14 @@ class Exp(BaseExp):
             inputs = nn.functional.interpolate(
                 inputs, size=tsize, mode="bilinear", align_corners=False
             )
-            targets[..., 1::2] = targets[..., 1::2] * scale_x
-            targets[..., 2::2] = targets[..., 2::2] * scale_y
+            # TODO 怪怪的?
+            # 官方作法  1::2 <-- 疑似是1開始間隔2取一次
+            # targets[..., 1::2] = targets[..., 1::2] * scale_x
+            # targets[..., 2::2] = targets[..., 2::2] * scale_y
+            targets[..., 1:2] = targets[..., 1:2] * scale_x
+            targets[..., 3:4] = targets[..., 3:4] * scale_x
+            targets[..., 2:3] = targets[..., 2:3] * scale_y
+            targets[..., 4:5] = targets[..., 4:5] * scale_y
         return inputs, targets
 
     def get_optimizer(self, batch_size):
