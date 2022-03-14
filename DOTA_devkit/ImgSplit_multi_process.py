@@ -305,13 +305,13 @@ if __name__ == '__main__':
     # elapsed = (time.clock() - start)
     # print("Time used:", elapsed)
 
-    split = splitbase(basepath=r'E:/dota/val',
-                      outpath=r'E:/dota/val_split_0_5',
+    split = splitbase(basepath=r'E:/dota/train',
+                      outpath=r'E:/dota/train_split',
                       gap=512,
                       subsize=1024,
                       thresh=0.7,
                       padding=True,
                       num_process=4
                       )
-    split.splitdata(0.5)  # resize rate before cut
+    split.splitdata(1.0)  # resize rate before cut
 

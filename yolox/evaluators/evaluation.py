@@ -448,7 +448,7 @@ def evaluation2(detoutput, imageset, annopath, classnames, ismulti_cls_nms=True,
     # logger.info("Infer time: {:.4f}s".format(time.time() - t0))
     print("Infer time: {:.4f}s".format(time.time() - t0))
     image2txt(
-        imageset,  # val原图数据集路径
+        imageset,  # val原圖數據集路徑
         imageset_name_file_path
               )
     print('校驗數據集名稱文件已生成')

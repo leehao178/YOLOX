@@ -342,198 +342,22 @@ def delete(imgpath, txtpath):
 if __name__ == '__main__':
     ## an example
 # dota1.0
-    # dota2LongSideFormat(imgpath='E:/dota/train_split/images',
-    #                     txtpath='E:/dota/train_split/labelTxt',
-    #                     dstpath='E:/yolo_180_head/train_split',
-    #                     extractclassname=util.wordname_15)
-
-    # drawLongsideFormatimg(imgpath='E:/dota/train_split/images',
-    #                       txtpath='E:/yolo_180_head/train_split',
-    #                       dstpath='E:/yolo_180_head/train_result',
-    #                       extractclassname=util.wordname_15)
-    
-    # dota2LongSideFormat(imgpath='E:/dota/val_split/images',
-    #                     txtpath='E:/dota/val_split/labelTxt',
-    #                     dstpath='E:/yolo_180_head/val_split',
-    #                     extractclassname=util.wordname_15)
-
-    # drawLongsideFormatimg(imgpath='E:/dota/val_split/images',
-    #                       txtpath='E:/yolo_180_head/val_split',
-    #                       dstpath='E:/yolo_180_head/val_result',
-    #                       extractclassname=util.wordname_15)
-
-# dota1.0_fix
-    # dota2LongSideFormat(imgpath='E:/dota/train_split_fix/images',
-    #                     txtpath='E:/dota/train_split_fix/labelTxt',
-    #                     dstpath='E:/yolo_180_head_fix/train_split',
-    #                     extractclassname=util.wordname_15)
-
-    # drawLongsideFormatimg(imgpath='E:/dota/train_split/images',
-    #                       txtpath='E:/yolo_180_head/train_split',
-    #                       dstpath='E:/yolo_180_head/train_result',
-    #                       extractclassname=util.wordname_15)
-    
-    # dota2LongSideFormat(imgpath='E:/dota/val_split_fix/images',
-    #                     txtpath='E:/dota/val_split_fix/labelTxt',
-    #                     dstpath='E:/yolo_180_head_fix/val_split',
-    #                     extractclassname=util.wordname_15)
-
-    # drawLongsideFormatimg(imgpath='E:/dota/val_split_fix/images',
-    #                       txtpath='E:/yolo_180_head_fix/val_split',
-    #                       dstpath='E:/yolo_180_head_fix/val_result',
-    #                       extractclassname=util.wordname_15)
-
-# dota1.5
-    # dota2LongSideFormat(imgpath='E:/yolo_dota15/train15_split/images',
-    #                     txtpath='E:/yolo_dota15/train15_split/labelTxt',
-    #                     dstpath='E:/yolo_dota15/train_split',
-    #                     extractclassname=util.classnames_v1_5)
-
-    # drawLongsideFormatimg(imgpath='E:/yolo_dota15/train15_split/images',
-    #                       txtpath='E:/yolo_dota15/train_split',
-    #                       dstpath='E:/yolo_dota15/train_result',
-    #                       extractclassname=util.classnames_v1_5)
-    
-    # dota2LongSideFormat(imgpath='E:/yolo_dota15/val15_split/images',
-    #                     txtpath='E:/yolo_dota15/val15_split/labelTxt',
-    #                     dstpath='E:/yolo_dota15/val_split',
-    #                     extractclassname=util.classnames_v1_5)
-
-    # drawLongsideFormatimg(imgpath='E:/yolo_dota15/val15_split/images',
-    #                       txtpath='E:/yolo_dota15/val_split',
-    #                       dstpath='E:/yolo_dota15/val_result',
-    #                       extractclassname=util.classnames_v1_5)
-
-    # car5
-
-    # dota2LongSideFormat(imgpath='C:/Users/Danny/Desktop/car_dataset_backup/car_dota/train/images',
-    #                     txtpath='C:/Users/Danny/Desktop/car_dataset_backup/car_dota/train/labelTxt',
-    #                     dstpath='C:/Users/Danny/Desktop/car_dataset_backup/car_yolo_180_head/train',
-    #                     extractclassname=util.classes_car)
-
-    # drawLongsideFormatimg(imgpath='E:/dota/train_split/images',
-    #                       txtpath='E:/yolo_180/train_split',
-    #                       dstpath='E:/yolo_180/result',
-    #                       extractclassname=util.wordname_15)
-
-    # dota2LongSideFormat(imgpath='C:/Users/Danny/Desktop/car_dataset_backup/car_dota/val/images',
-    #                     txtpath='C:/Users/Danny/Desktop/car_dataset_backup/car_dota/val/labelTxt',
-    #                     dstpath='C:/Users/Danny/Desktop/car_dataset_backup/car_yolo_180_head/val',
-    #                     extractclassname=util.classes_car)
-
-    # drawLongsideFormatimg(imgpath='E:/dota/train_split/images',
-    #                       txtpath='E:/yolo_180/train_split',
-    #                       dstpath='E:/yolo_180/result',
-    #                       extractclassname=util.wordname_15)
-
-    # car8
-    # dota2LongSideFormat(imgpath='E:/car8_dota/images',
-    #                     txtpath='E:/car8_dota//labelTxt',
-    #                     dstpath='E:/car8_yolo_180/train',
-    #                     extractclassname=util.classes_car8)
-
-    # drawLongsideFormatimg(imgpath='E:/car8_dota/images',
-    #                       txtpath='E:/car8_yolo_180/train',
-    #                       dstpath='E:/car8_yolo_180/result',
-    #                       extractclassname=util.classes_car8)
-
-    # dota2LongSideFormat(imgpath='C:/Users/Danny/Desktop/car_dataset_backup/car_dota/val/images',
-    #                     txtpath='C:/Users/Danny/Desktop/car_dataset_backup/car_dota/val/labelTxt',
-    #                     dstpath='C:/Users/Danny/Desktop/car_dataset_backup/car_yolo_180_head/val',
-    #                     extractclassname=util.classes_car)
-
-    # drawLongsideFormatimg(imgpath='E:/dota/train_split/images',
-    #                       txtpath='E:/yolo_180/train_split',
-    #                       dstpath='E:/yolo_180/result',
-    #                       extractclassname=util.wordname_15)
-
-    # HRSC2016
-    # dota2LongSideFormat(imgpath='E:/hrsc_dota/train_split/images',
-    #                     txtpath='E:/hrsc_dota/train_split/labelTxt',
-    #                     dstpath='E:/hrsc_yolo/train',
-    #                     extractclassname=util.classes_HRSC2016)
-
-    # drawLongsideFormatimg(imgpath='E:/hrsc_yolo/train',
-    #                       txtpath='E:/hrsc_yolo/train',
-    #                       dstpath='E:/hrsc_yolo/train_result',
-    #                       extractclassname=util.classes_HRSC2016)
-
-    # dota2LongSideFormat(imgpath='E:/hrsc_dota/test_split/images',
-    #                     txtpath='E:/hrsc_dota/test_split/labelTxt',
-    #                     dstpath='E:/hrsc_yolo/test',
-    #                     extractclassname=util.classes_HRSC2016)
-
-    # drawLongsideFormatimg(imgpath='E:/hrsc_yolo/test',
-    #                       txtpath='E:/hrsc_yolo/test',
-    #                       dstpath='E:/hrsc_yolo/val_result',
-    #                       extractclassname=util.classes_HRSC2016)
-# =====================================================================
-
-    # dota2LongSideFormat(imgpath='E:/dota/train_split_0_5/images',
-    #                     txtpath='E:/dota/train_split_0_5/labelTxt',
-    #                     dstpath='E:/dota_yolo_mix/train_split_0_5',
-    #                     extractclassname=util.wordname_15)
-
-
-    # dota2LongSideFormat(imgpath='E:/dota/train_split_1_5/images',
-    #                     txtpath='E:/dota/train_split_1_5/labelTxt',
-    #                     dstpath='E:/dota_yolo_mix/train_split_1_5',
-    #                     extractclassname=util.wordname_15)
-
-
-    # dota2LongSideFormat(imgpath='E:/dota/train_split_1_0/images',
-    #                     txtpath='E:/dota/train_split_1_0/labelTxt',
-    #                     dstpath='E:/dota_yolo_mix/train_split_1_0',
-    #                     extractclassname=util.wordname_15)
-
-
-    # drawLongsideFormatimg(imgpath='E:/dota/train_split_0_5/images',
-    #                       txtpath='E:/dota_yolo_mix/train_split',
-    #                       dstpath='E:/dota_yolo_mix/val_result',
-    #                       extractclassname=util.wordname_15)
-
-    # drawLongsideFormatimg(imgpath='E:/dota/train_split_1_5/images',
-    #                       txtpath='E:/dota_yolo_mix/train_split',
-    #                       dstpath='E:/dota_yolo_mix/val_result',
-    #                       extractclassname=util.wordname_15)
-
-    # drawLongsideFormatimg(imgpath='E:/dota/train_split_1_0/images',
-    #                       txtpath='E:/dota_yolo_mix/train_split',
-    #                       dstpath='E:/dota_yolo_mix/val_result',
-    #                       extractclassname=util.wordname_15)
-
-
-# =====================================================================
-
-
-    dota2LongSideFormat(imgpath='E:/dota/val_split_0_5/images',
-                        txtpath='E:/dota/val_split_0_5/labelTxt',
-                        dstpath='E:/dota_yolo_mix/val_split_0_5',
+    dota2LongSideFormat(imgpath='E:/dota/train_split/images',
+                        txtpath='E:/dota/train_split/labelTxt',
+                        dstpath='E:/yolo/train_split',
                         extractclassname=util.wordname_15)
 
-    dota2LongSideFormat(imgpath='E:/dota/val_split_1_5/images',
-                        txtpath='E:/dota/val_split_1_5/labelTxt',
-                        dstpath='E:/dota_yolo_mix/val_split_1_5',
-                        extractclassname=util.wordname_15)
-
-    dota2LongSideFormat(imgpath='E:/dota/val_split_1_0/images',
-                        txtpath='E:/dota/val_split_1_0/labelTxt',
-                        dstpath='E:/dota_yolo_mix/val_split_1_0',
-                        extractclassname=util.wordname_15)
-
-
-
-    drawLongsideFormatimg(imgpath='E:/dota/val_split_0_5/images',
-                          txtpath='E:/dota_yolo_mix/val_split_0_5',
-                          dstpath='E:/dota_yolo_mix/val_result_0_5',
+    drawLongsideFormatimg(imgpath='E:/dota/train_split/images',
+                          txtpath='E:/yolo/train_split',
+                          dstpath='E:/yolo/train_result',
                           extractclassname=util.wordname_15)
+    
+    dota2LongSideFormat(imgpath='E:/dota/val_split/images',
+                        txtpath='E:/dota/val_split/labelTxt',
+                        dstpath='E:/yolo/val_split',
+                        extractclassname=util.wordname_15)
 
-    drawLongsideFormatimg(imgpath='E:/dota/val_split_1_5/images',
-                          txtpath='E:/dota_yolo_mix/val_split_1_5',
-                          dstpath='E:/dota_yolo_mix/val_result_1_5',
-                          extractclassname=util.wordname_15)
-
-    drawLongsideFormatimg(imgpath='E:/dota/val_split_1_0/images',
-                          txtpath='E:/dota_yolo_mix/val_split_1_0',
-                          dstpath='E:/dota_yolo_mix/val_result_1_0',
+    drawLongsideFormatimg(imgpath='E:/dota/val_split/images',
+                          txtpath='E:/yolo/val_split',
+                          dstpath='E:/yolo/val_result',
                           extractclassname=util.wordname_15)

@@ -223,6 +223,8 @@ If you use YOLOX in your research, please cite our work by using the following B
 
 ## Install
 ```shell
+sudo apt-get install swig
+
 conda create --name yolox python=3.7 -y
 
 conda activate yolox
@@ -235,7 +237,43 @@ pip install -v -e .  # or  python3 setup.py develop
 
 pip install cython; pip install 'git+https://github.com/cocodataset/cocoapi.git#subdirectory=PythonAPI'
 
+cd DOTA_devkit
+
+swig -c++ -python polyiou.i
+
+python setup.py build_ext --inplace
+
 cd yolox/utils/iou
 
 python setup.py build_ext --inplace
 ```
+
+## DOTA datasets
+PATH
+```shell
+cd DOTA_devkit
+```
+Step 1. Split
+```shell
+python ImgSplit_multi_process.py
+```
+
+Step 2. DOTA format to YOLO format
+```shell
+python YOLO_Transform.py
+```
+
+Step 3. YOLO format to COCO format
+```shell
+python darknet2coco.py  --data_path YOLO2COCO/gen_config.data
+```
+
+## train
+```shell
+python tools/train.py -f exps/rotation/yolortx_m.py -d 1 -b 16 --fp16
+```
+
+## demo
+```shell
+```
+
