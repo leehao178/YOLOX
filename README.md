@@ -223,13 +223,13 @@ If you use YOLOX in your research, please cite our work by using the following B
 
 ## Install
 ```shell
-sudo apt-get install swig
+sudo apt-get install swig -y
 
 conda create --name yolox python=3.7 -y
 
 conda activate yolox
 
-conda install pytorch torchvision torchaudio cudatoolkit=10.2 -c pytorch
+pip install torch==1.8.1+cu102 torchvision==0.9.1+cu102 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
 
 pip install -U pip && pip install -r requirements.txt
 
@@ -243,9 +243,13 @@ swig -c++ -python polyiou.i
 
 python setup.py build_ext --inplace
 
-cd yolox/utils/iou
+cd ../yolox/utils/iou
 
 python setup.py build_ext --inplace
+
+cd ../Rotated_IoU/cuda_op
+
+python setup.py install
 
 export TORCH_CUDA_ARCH_LIST="7.5"
 ```
@@ -272,7 +276,7 @@ python darknet2coco.py  --data_path YOLO2COCO/gen_config.data
 
 ## train
 ```shell
-python tools/train.py -f exps/rotation/yolortx_m.py -d 1 -b 16 --fp16
+python tools/train.py -f exps/rotation/yolortx_m.py -d 1 -b 4 --fp16
 ```
 
 ## demo
