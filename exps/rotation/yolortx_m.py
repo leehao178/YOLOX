@@ -37,7 +37,7 @@ class Exp(MyExp):
         self.multiscale_range = 5
         # You can uncomment this line to specify a multiscale range
         # self.random_size = (14, 26)
-        self.data_dir = "/home/aimlusr/dataset/dota10"
+        self.data_dir = "/home/lab602.demo/YOLOX/DOTA_devkit/YOLO2COCO/coco_dataset"
         self.train_ann = "instances_train2017.json"
         self.val_ann = "instances_val2017.json"
 
@@ -74,7 +74,7 @@ class Exp(MyExp):
         self.momentum = 0.9
         self.print_interval = 1
         self.eval_interval = 300
-        self.save_ckpt_interval = 30
+        self.save_ckpt_interval = 3
         self.exp_name = os.path.split(os.path.realpath(__file__))[1].split(".")[0]
 
         # --------------  angles config --------------------- #

@@ -305,8 +305,8 @@ if __name__ == '__main__':
     # elapsed = (time.clock() - start)
     # print("Time used:", elapsed)
 
-    split = splitbase(basepath=r'E:/dota/train',
-                      outpath=r'E:/dota/train_split',
+    split = splitbase(basepath=r'example',
+                      outpath=r'example/train_split',
                       gap=512,
                       subsize=1024,
                       thresh=0.7,

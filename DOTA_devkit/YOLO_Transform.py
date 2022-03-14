@@ -341,23 +341,14 @@ def delete(imgpath, txtpath):
 
 if __name__ == '__main__':
     ## an example
-# dota1.0
-    dota2LongSideFormat(imgpath='E:/dota/train_split/images',
-                        txtpath='E:/dota/train_split/labelTxt',
-                        dstpath='E:/yolo/train_split',
+    # dota1.0
+    dota2LongSideFormat(imgpath='example/train_split/images',
+                        txtpath='example/train_split/labelTxt',
+                        dstpath='example/yolo/train_split',
                         extractclassname=util.wordname_15)
 
-    drawLongsideFormatimg(imgpath='E:/dota/train_split/images',
-                          txtpath='E:/yolo/train_split',
-                          dstpath='E:/yolo/train_result',
+    drawLongsideFormatimg(imgpath='example/train_split/images',
+                          txtpath='example/yolo/train_split',
+                          dstpath='example/yolo/train_result',
                           extractclassname=util.wordname_15)
-    
-    dota2LongSideFormat(imgpath='E:/dota/val_split/images',
-                        txtpath='E:/dota/val_split/labelTxt',
-                        dstpath='E:/yolo/val_split',
-                        extractclassname=util.wordname_15)
 
-    drawLongsideFormatimg(imgpath='E:/dota/val_split/images',
-                          txtpath='E:/yolo/val_split',
-                          dstpath='E:/yolo/val_result',
-                          extractclassname=util.wordname_15)

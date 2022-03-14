@@ -24,7 +24,7 @@ class DARKNET2COCO:
         self.dst=Path(self.src) / "coco_dataset"
         self.coco_train="train2017"
         self.coco_valid="val2017"
-        self.coco_images="images"
+        self.coco_images=""
         self.coco_annotation="annotations"
         self.coco_train_json=Path(self.dst)/Path(self.coco_annotation) / f'instances_{self.coco_train}.json'
         self.coco_valid_json=Path(self.dst)/Path(self.coco_annotation) / f'instances_{self.coco_valid}.json'
@@ -92,7 +92,9 @@ class DARKNET2COCO:
             allfiles=f.readlines()
         for file in allfiles:
             if not os.path.isabs(file):
-                this_path=Path(self.src)/file.strip()
+                # this_path=Path(self.src)/file.strip()
+                this_path=file.strip()
+                # print(file.strip())
                 content.append(str(this_path))
             else:
                 content.append(file.strip())

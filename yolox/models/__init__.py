@@ -4,7 +4,7 @@
 
 from .darknet import CSPDarknet, Darknet
 from .swin_transformer import SwinTransformer
-from .losses import IOUloss, FocalLoss, RIOUloss
+from .losses import IOUloss, FocalLoss
 from .yolo_fpn import YOLOFPN
 from .yolo_head import YOLOXHead
 from .yolo_pafpn import YOLOPAFPN
@@ -15,7 +15,6 @@ from .yolox import YOLOX
 from .yolo_head_rotate_less import YOLOXRotateHeadLessHead
 from .yolo_head_rotate_order import YOLOXRotateHeadOrderHead
 from .yolo_head_rotate_order_hydra import YOLOXRotateHeadOrderHydraHead
-from .yolo_head_faster import YOLOXFasterHead
 
 # YOLOX
 from .yolox_head_less import YOLOXHeadLess

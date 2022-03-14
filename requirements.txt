@@ -18,5 +18,7 @@ onnxruntime==1.8.0
 onnx-simplifier==0.3.5
 
 # DOTA_devkit
+shapely
+timm
 # numpy==1.19.1
 # pillow==7.2.0

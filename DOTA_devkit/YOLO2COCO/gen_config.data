@@ -1,4 +1,4 @@
 classes=15
-train=your/trainset/path/gen_train.txt
-valid=your/validset/path/gen_valid.txt
-names=your/class.names/path/class.names
+train=YOLO2COCO/gen_train.txt
+valid=YOLO2COCO/gen_valid.txt
+names=YOLO2COCO/class.names

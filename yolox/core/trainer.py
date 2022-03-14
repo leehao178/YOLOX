@@ -46,6 +46,7 @@ class Trainer:
         self.local_rank = get_local_rank()
         self.device = "cuda:{}".format(self.local_rank)
         self.use_model_ema = exp.ema
+        self.save_ckpt_interval = exp.save_ckpt_interval
 
         # data/dataloader related attr
         self.data_type = torch.float16 if args.fp16 else torch.float32
@@ -185,7 +186,7 @@ class Trainer:
         )
 
     def before_epoch(self):
-        logger.info("---> start train epoch{}".format(self.epoch + 1))
+        logger.info("---> start train epoch {}".format(self.epoch + 1))
 
         if self.epoch + 1 == self.max_epoch - self.exp.no_aug_epochs or self.no_aug:
             logger.info("--->No mosaic aug now!")
@@ -201,6 +202,9 @@ class Trainer:
 
     def after_epoch(self):
         self.save_ckpt(ckpt_name="latest")
+
+        if (self.epoch + 1) % self.save_ckpt_interval == 0:
+            self.save_ckpt(ckpt_name="epoch_{}".format(self.epoch + 1))
 
         if (self.epoch + 1) % self.exp.eval_interval == 0:
             all_reduce_norm(self.model)
@@ -229,6 +233,12 @@ class Trainer:
             loss_str = ", ".join(
                 ["{}: {:.1f}".format(k, v.latest) for k, v in loss_meter.items()]
             )
+
+            # 增加tensorboard參數
+            if self.rank == 0:
+                self.tblogger.add_scalar('train/lr', self.meter["lr"].latest, self.epoch + 1)
+                for k, v in loss_meter.items():
+                    self.tblogger.add_scalar('train/{}'.format(k), v.latest, self.epoch + 1)
 
             time_meter = self.meter.get_filtered_meter("time")
             time_str = ", ".join(

@@ -246,6 +246,8 @@ python setup.py build_ext --inplace
 cd yolox/utils/iou
 
 python setup.py build_ext --inplace
+
+export TORCH_CUDA_ARCH_LIST="7.5"
 ```
 
 ## DOTA datasets

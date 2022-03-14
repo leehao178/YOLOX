@@ -12,13 +12,15 @@ __pycache__/
 Task1_merge/*.txt
 Task1/*.txt
 restoredexample/*
+DOTA_devkit/example/train_split/*
+DOTA_devkit/example/yolo/*
 
 ### Linux ###
 *~
 
 # user experiments directory
 YOLOX_outputs/
-datasets/
+# datasets/
 
 # temporary files which can be created if a process still has a handle open of a deleted file
 .fuse_hidden*
