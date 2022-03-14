@@ -277,5 +277,6 @@ python tools/train.py -f exps/rotation/yolortx_m.py -d 1 -b 16 --fp16
 
 ## demo
 ```shell
+python tools/detect.py -f exps/rotation/yolortx_m.py -c YOLOX_outputs/yolortx_m/epoch_300_ckpt.pth --path ./DOTA_devkit/example/train_split/images/P0706__1.0__0___0.png 
 ```
 

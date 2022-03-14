@@ -71,8 +71,10 @@ def fast_nms(boxes, scores, giou=False, diou=False, ciou=False, cluster=False, s
         Fast NMS results
     '''
     # 對框按得分降序排列
-    scores, idx = scores.sort(0, descending=True)
-    boxes = boxes[idx]
+    # scores, idx = scores.sort(0, descending=True)
+    # boxes = boxes[idx]
+    # boxes = boxes[:3000]
+
     iou, corners1, corners2, u = box_rotated_iou(boxes.float().unsqueeze(0), boxes.float().unsqueeze(0))
     if giou:
         w, h = enclosing_box(corners1, corners2, enclosing_type)
@@ -103,10 +105,12 @@ def fast_nms(boxes, scores, giou=False, diou=False, ciou=False, cluster=False, s
             keep = scores > NMS_threshold  # 得分阈值筛选 這邊要調
         else:
             keep = maxA < NMS_threshold  # 列最大值向量，二值化
+        del C
     else:
         # fast_nms
         keep = iou.max(dim=0)[0] < NMS_threshold  # 列最大值向量，二值化
-
+    
+    del scores, iou
     return keep
 
 
@@ -213,7 +217,7 @@ def postprocess_rotation(prediction, num_classes, num_angles, conf_thre=0.7, nms
 
     return output
 
-def postprocess_rotation_head(prediction, num_classes, num_angles, conf_thre=0.7, nms_thre=0.45, isnms=True):
+def postprocess_rotation_head(prediction, num_classes, num_angles, conf_thre=0.7, nms_thre=0.45, isnms=True, isfastnms=False):
     box_corner = prediction.new(prediction.shape)
     box_corner[:, :, 0] = prediction[:, :, 0] - prediction[:, :, 2] / 2
     box_corner[:, :, 1] = prediction[:, :, 1] - prediction[:, :, 3] / 2
@@ -248,12 +252,28 @@ def postprocess_rotation_head(prediction, num_classes, num_angles, conf_thre=0.7
                 nms_thre,
             )
             detections = detections[nms_out_index]
+        if isfastnms:
+            scores = detections[:, 4] * detections[:, 5]
+            scores, idx = scores.sort(0, descending=True)
+            detections = detections[idx]
+            detections = detections[:1000]
 
+            dets = detections.clone()
+            dets[:, 2] = detections[:, 2] - detections[:, 0]
+            dets[:, 3] = detections[:, 3] - detections[:, 1]
+            dets[:, 0] = dets[:, 0] + dets[:, 2]*0.5
+            dets[:, 1] = dets[:, 1] + dets[:, 3]*0.5
+
+            
+
+            nms_out_index = fast_nms(boxes=dets[:, :5], scores=scores, NMS_threshold=0.1, cluster=True, giou=True)
+            detections = detections[nms_out_index]
+            del dets
         if output[i] is None:
             output[i] = detections
         else:
             output[i] = torch.cat((output[i], detections))
-
+        del detections
     return output
 
 
