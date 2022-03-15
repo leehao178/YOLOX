@@ -245,6 +245,8 @@ python setup.py build_ext --inplace
 
 cd ../yolox/utils/iou
 
+swig -c++ -python polyiou.i
+
 python setup.py build_ext --inplace
 
 cd ../Rotated_IoU/cuda_op
